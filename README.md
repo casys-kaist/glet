@@ -1,6 +1,7 @@
 # github repository for glet Prototype
 
-Work-in-Progress! Code is planned to be added by June 2022.
+Work-in-Progress! Code is planned to be added by August 2022.
+(Due to several issues, we have decided to postpone releasing the code for two months)
 
 # Academic and Conference Papers
 
