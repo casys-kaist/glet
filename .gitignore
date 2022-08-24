@@ -43,6 +43,8 @@ gan-client
 # ignore all files in the bin/ directory
 */bin/*
 
+# ignore all files under libtorch
+*/libtorch/*
 
 #ignore all (OLD) files in client/directory
 
