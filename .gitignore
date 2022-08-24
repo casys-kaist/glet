@@ -38,17 +38,13 @@ nlp-client
 gan-client
 
 # ignore all files in the build/ directory
-*/build/*
+build/*
 
 # ignore all files in the bin/ directory
-*/bin/*
+bin/*
 
 # ignore all files under libtorch
-*/libtorch/*
-
-#ignore all (OLD) files in client/directory
-
-client/
+libtorch/*
 
 # Popular scripts with hardpaths
 asr/kaldi_patch.sh
