@@ -1,0 +1,96 @@
+# dnn-service gitignore
+# Object files
+*.o
+*.ko
+*.obj
+*.elf
+
+# Libraries
+*.lib
+*.a
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# caffe models
+.caffemodel
+
+#pytorch torch scripts
+*.pt
+*.pth
+
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+*~
+tonic-img
+tonic-nlp
+djinn
+img-client
+nlp-client
+gan-client
+
+# ignore all files in the build/ directory
+*/build/*
+
+# ignore all files in the bin/ directory
+*/bin/*
+
+
+#ignore all (OLD) files in client/directory
+
+client/
+
+# Popular scripts with hardpaths
+asr/kaldi_patch.sh
+#common/Makefile.config
+# experiment scripts
+#*.py
+#*.sh 
+
+#cmake debris
+CMakeFiles
+cmake_install.cmake
+CMakeCache.txt
+
+
+# datasets
+*/weights/*
+*/images/*
+*/hash/*
+*/input/*
+*/data/*
+*/log/*
+*/voxforge_data/*
+
+# csvs and txts
+*.csv
+*.txt
+stats-util/
+nvprof-*
+
+# logs
+*log*
+
+# etc
+*.swp
+
+# compressed files
+*.zip
+*.tar
+*.tar.gz
+
+# raw image data 
+*.jpg
+*.png
+*.JPEG
+
+# vscode related files
+*vscode*
