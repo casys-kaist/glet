@@ -55,8 +55,6 @@ typedef struct _InputInfo {
 
 std::map<std::string,InputInfo*> g_nameToInputInfo;
 
-void computeRequest();
-
 po::variables_map parse_opts(int ac, char** av) {
 	po::options_description desc("Allowed options");
 	desc.add_options()("help,h", "Produce help message")
@@ -121,18 +119,6 @@ void setupGlobalVars(po::variables_map &vm){
 		exit(1);
 	}
 	return;
-}
-
-int main(int argc, char** argv) {
-	torch::jit::getBailoutDepth() = 0;
-	torch::jit::getProfilingMode() = false;
-	/*get parameters for this program*/
-	po::variables_map vm = parse_opts(argc, argv);
-	setupGlobalVars(vm);
-	printTimeStamp("START PROGRAM");
-	computeRequest();   
-	printTimeStamp("END PROGRAM");
-	return 0;
 }
 
 
@@ -269,3 +255,16 @@ void computeRequest(){
 		inputs.clear();
 	}
 }
+
+int main(int argc, char** argv) {
+	torch::jit::getBailoutDepth() = 0;
+	torch::jit::getProfilingMode() = false;
+	/*get parameters for this program*/
+	po::variables_map vm = parse_opts(argc, argv);
+	setupGlobalVars(vm);
+	printTimeStamp("START PROGRAM");
+	computeRequest();   
+	printTimeStamp("END PROGRAM");
+	return 0;
+}
+
