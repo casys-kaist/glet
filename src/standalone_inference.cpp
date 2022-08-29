@@ -32,7 +32,6 @@
 namespace po = boost::program_options; 
 using namespace cv;
 
-
 // mean interval between inference (in seconds)
 double g_mean;
 
@@ -74,7 +73,6 @@ po::variables_map parse_opts(int ac, char** av) {
 	return vm;
 }
 
-
 int readInputJSONFile(const char* input_config_file, std::map<std::string, InputInfo*> &mapping){
 #ifdef DEBUG
 	printf("Reading App JSON File: %s \n", input_config_file);
@@ -105,7 +103,6 @@ int readInputJSONFile(const char* input_config_file, std::map<std::string, Input
 	return EXIT_SUCCESS;
 }
 
-
 void setupGlobalVars(po::variables_map &vm){
 	g_task = vm["task"].as<std::string>();
 	g_mean = vm["mean"].as<double>();
@@ -121,7 +118,6 @@ void setupGlobalVars(po::variables_map &vm){
 	return;
 }
 
-
 void PyTorchInit(){
 	uint64_t total_end, total_start;
 	std::vector<torch::jit::IValue> inputs;
@@ -136,8 +132,6 @@ void PyTorchInit(){
 	total_end = getCurNs();
 	std::cout << double(total_end - total_start)/1000000 << " PyTorchInit total ms "<<std::endl;
 	return;
-
-
 }
 
 torch::Tensor getRandomNLPInput(std::vector<int> &input_dims, std::string &input_type){
@@ -290,4 +284,3 @@ int main(int argc, char** argv) {
 	printTimeStamp("END PROGRAM");
 	return 0;
 }
-
