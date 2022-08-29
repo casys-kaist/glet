@@ -154,6 +154,32 @@ void PyTorchInit(){
 
 }
 
+torch::Tensor getRandomNLPInput(std::vector<int> &input_dims, std::string &input_type){
+	std::vector<int64_t> dims;
+	// read input dimensions
+	dims.push_back(g_batchSize);
+	int cnt=1;  // skip the first element
+	for(auto dim : input_dims){
+		if(cnt  !=0){
+			cnt = cnt -1;
+			continue;
+		}
+		dims.push_back(dim);
+	}
+	torch::TensorOptions options;
+	if (input_type == "INT64")
+		options = torch::TensorOptions().dtype(torch::kInt64).device(torch::kCUDA,0).requires_grad(false);
+	else if(input_type == "FP32")
+		options = torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCUDA,0).requires_grad(false);
+	else{
+		printf("unsupported type: %s \n", input_type.c_str());
+		exit(1);   
+	}
+	torch::Tensor input=torch::ones(dims,options);
+	return input;
+}
+
+
 torch::Tensor getRandomImgInput(std::vector<int> &input_dims, std::string &input_type, int batch_size){
 	std::vector<int64_t> dims;
 	// read input dimensions
@@ -190,7 +216,7 @@ void getInputs(const char* netname, std::vector<torch::jit::IValue> &inputs, int
 	else{
 		for(unsigned int i=0; i < g_nameToInputInfo[str_name]->InputDims.size(); i++){
 			if(str_name.find(c_str_bert) != std::string::npos)
-				//input = getRandomNLPInput(*(g_nameToInputInfo[str_name]->InputDims[i]), g_nameToInputInfo[str_name]->InputTypes[i]);
+				input = getRandomNLPInput(*(g_nameToInputInfo[str_name]->InputDims[i]), g_nameToInputInfo[str_name]->InputTypes[i]);
 			else
 				input = getRandomImgInput(*(g_nameToInputInfo[str_name]->InputDims[i]), g_nameToInputInfo[str_name]->InputTypes[i], batch_size);
 		}
