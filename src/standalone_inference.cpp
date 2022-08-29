@@ -32,7 +32,6 @@
 namespace po = boost::program_options; 
 using namespace cv;
 
-bool g_warmupFlag = true; // flag for indicating to do warmup
 
 // mean interval between inference (in seconds)
 double g_mean;
@@ -136,5 +135,24 @@ int main(int argc, char** argv) {
 	return 0;
 }
 
+
+void PyTorchInit(){
+	uint64_t total_end, total_start;
+	std::vector<torch::jit::IValue> inputs;
+	std::vector<int64_t> sizes={1};
+	torch::TensorOptions options;
+	options = torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCUDA,0).requires_grad(false);
+	total_start = getCurNs();
+	torch::Tensor dummy1 = at::empty(sizes,options);
+	torch::Tensor dummy2 = at::empty(sizes,options);
+	torch::Tensor dummy3 = dummy1 + dummy2;
+	cudaDeviceSynchronize();
+	total_end = getCurNs();
+	std::cout << double(total_end - total_start)/1000000 << " PyTorchInit total ms "<<std::endl;
+	return;
+}
+
+
 void computeRequest(){
+	PyTorchInit();
 }
