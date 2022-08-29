@@ -273,6 +273,10 @@ void computeRequest(){
 		printf("latency: %lf\n", double(end-start)/1000000);
 		inputs.clear();
 	}
+#ifdef DEBUG
+	printf("total latency: %lf \n", double(total_end-total_start)/1000000);
+	printf("total throughput: %lf\n", g_numReqs*(g_batchSize)/(double(total_end-total_start)/1000000000) );
+#endif
 }
 
 int main(int argc, char** argv) {
