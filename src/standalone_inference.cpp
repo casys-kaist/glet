@@ -153,6 +153,30 @@ void PyTorchInit(){
 }
 
 void getInputs(const char* netname, std::vector<torch::jit::IValue> &inputs, int batch_size){
+	torch::Tensor input;
+	torch::Device gpu_dev(torch::kCUDA,0);
+#ifdef DEBUG
+	printf("get input for %s \n", netname);
+#endif 
+	std::string c_str_bert = "bert";
+	std::string str_name = std::string(netname);        
+	// assume this model is for profiling random model
+	if(g_nameToInputInfo.find(str_name) == g_nameToInputInfo.end()){
+		std::string c_str_fp32 = "FP32";
+		std::vector<int> DIMS = {3,224,224};
+		//input = getRandomImgInput(DIMS,c_str_fp32,batch_size);
+	}
+	else{
+		for(unsigned int i=0; i < g_nameToInputInfo[str_name]->InputDims.size(); i++){
+			if(str_name.find(c_str_bert) != std::string::npos)
+				//input = getRandomNLPInput(*(g_nameToInputInfo[str_name]->InputDims[i]), g_nameToInputInfo[str_name]->InputTypes[i]);
+			//else
+				//input = getRandomImgInput(*(g_nameToInputInfo[str_name]->InputDims[i]), g_nameToInputInfo[str_name]->InputTypes[i], batch_size);
+		}
+	}
+	input = input.to(gpu_dev);
+	inputs.push_back(input);
+	return;
 }
 
 void computeRequest(){
