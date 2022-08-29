@@ -154,5 +154,24 @@ void PyTorchInit(){
 
 
 void computeRequest(){
+	#ifdef DEBUG
+	std::cout<<"started copmuting thread"<<std::endl;
+#endif
+	torch::Tensor input;
+	std::vector<torch::jit::IValue> inputs;
+	torch::Device gpu_dev(torch::kCUDA,0);
+	uint64_t total_end, total_start;
+	const char *netname = g_task.c_str();
+	int i;
 	PyTorchInit();
+	std::cout<< "waiting for 3 seconds after PyTorchInit" << std::endl;
+	usleep(3*1000*1000);
+	uint64_t t1,t2,t3,t4;
+	t1 = getCurNs();
+	std::shared_ptr<torch::jit::script::Module> module = std::make_shared<torch::jit::script::Module>(torch::jit::load(g_taskFile.c_str(),gpu_dev));
+	t2 = getCurNs();
+	module->to(gpu_dev);
+	module->eval();
+	cudaDeviceSynchronize();
+	t3= getCurNs();       
 }
