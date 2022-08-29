@@ -174,4 +174,15 @@ void computeRequest(){
 	module->eval();
 	cudaDeviceSynchronize();
 	t3= getCurNs();       
+	// warmup
+	for(int batch_size = 32; batch_size >=1; batch_size--){
+		getInputs(netname, inputs,batch_size);
+		module->forward(inputs);
+		cudaDeviceSynchronize();
+		inputs.clear();
+	}
+	t4 = getCurNs();
+	std::cout<< "waiting for 3 seconds after warmup" << std::endl;
+	usleep(3*1000*1000);
+
 }
