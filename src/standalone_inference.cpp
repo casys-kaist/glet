@@ -252,6 +252,25 @@ void computeRequest(){
 		usleep(g_mean * 1000* 1000);
 		getInputs(netname,inputs,g_batchSize);
 		printTimeStampWithName(netname, "START EXEC");
+#ifdef DEBUG
+		if(i==0) total_start=getCurNs();
+		
+#endif
+		uint64_t start,end;
+		uint64_t start_check= getCurNs();
+		cudaProfilerStart();
+		start = getCurNs();
+		torch::IValue output = module->forward(inputs);
+		if(output.isTuple()){
+			torch::Tensor t = output.toTuple()->elements()[0].toTensor(); // 1st output;
+			t = t.to(torch::Device(torch::kCPU));
+		}
+		else torch::Tensor t = output.toTensor().to(torch::Device(torch::kCPU));
+		cudaDeviceSynchronize();
+		end=getCurNs(); 
+		cudaProfilerStop();
+		printTimeStampWithName(netname, "END EXEC");
+		printf("latency: %lf\n", double(end-start)/1000000);
 		inputs.clear();
 	}
 }
