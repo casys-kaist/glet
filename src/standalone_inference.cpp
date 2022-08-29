@@ -49,6 +49,13 @@ std::string g_task;
 // directory to model (.pt) file
 std::string g_taskFile;
 
+typedef struct _InputInfo {
+	std::vector<std::vector<int>*> InputDims;
+	std::vector<std::string> InputTypes;
+} InputInfo;
+
+std::map<std::string,InputInfo*> g_nameToInputInfo;
+
 void computeRequest();
 
 po::variables_map parse_opts(int ac, char** av) {
@@ -71,6 +78,37 @@ po::variables_map parse_opts(int ac, char** av) {
 }
 
 
+int readInputJSONFile(const char* input_config_file, std::map<std::string, InputInfo*> &mapping){
+#ifdef DEBUG
+	printf("Reading App JSON File: %s \n", input_config_file);
+#endif
+	Json::Value root;
+	std::ifstream ifs;
+	ifs.open(input_config_file);
+
+	Json::CharReaderBuilder builder;
+	JSONCPP_STRING errs;
+	if (!parseFromStream(builder, ifs, &root, &errs)) {
+		std::cout << errs << std::endl;
+		ifs.close();
+		return EXIT_FAILURE;
+	}
+	for(unsigned int i=0; i < root["ModelInfoSpecs"].size(); i++){
+		std::string model_name = root["ModelInfoSpecs"][i]["ModelName"].asString();
+		mapping[model_name]=new InputInfo();
+		for(unsigned int j=0; j< root["ModelInfoSpecs"][i]["Inputs"].size(); j++){
+			mapping[model_name]->InputDims.push_back(new std::vector<int>());
+			for(unsigned int k=0; k<root["ModelInfoSpecs"][i]["Inputs"][j]["InputDim"].size(); k++){
+				mapping[model_name]->InputDims[j]->push_back(root["ModelInfoSpecs"][i]["Inputs"][j]["InputDim"][k].asInt());
+			}
+			mapping[model_name]->InputTypes.push_back(root["ModelInfoSpecs"][i]["Inputs"][j]["InputType"].asString());
+		}
+	}
+	ifs.close();
+	return EXIT_SUCCESS;
+}
+
+
 void setupGlobalVars(po::variables_map &vm){
 	g_task = vm["task"].as<std::string>();
 	g_mean = vm["mean"].as<double>();
@@ -78,6 +116,11 @@ void setupGlobalVars(po::variables_map &vm){
 	g_batchSize= vm["batch"].as<int>();
 	assert(g_batchSize!=0);
 	g_taskFile = vm["taskfile"].as<std::string>();
+	if(readInputJSONFile(vm["input_config_json"].as<std::string>().c_str(), g_nameToInputInfo))
+	{
+		printf("Failed reading json file: %s \n", vm["input_config_json"].as<std::string>().c_str());
+		exit(1);
+	}
 	return;
 }
 
