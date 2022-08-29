@@ -34,10 +34,19 @@ using namespace cv;
 
 bool g_warmupFlag = true; // flag for indicating to do warmup
 
+// mean interval between inference (in seconds)
 double g_mean;
+
+// total number of interference executions
 int g_numReqs;
+
+// batch size
 int g_batchSize;
+
+// name of model
 std::string g_task;
+
+// directory to model (.pt) file
 std::string g_taskFile;
 
 void computeRequest();
@@ -63,7 +72,13 @@ po::variables_map parse_opts(int ac, char** av) {
 
 
 void setupGlobalVars(po::variables_map &vm){
-	
+	g_task = vm["task"].as<std::string>();
+	g_mean = vm["mean"].as<double>();
+	g_numReqs=vm["requests"].as<int>();
+	g_batchSize= vm["batch"].as<int>();
+	assert(g_batchSize!=0);
+	g_taskFile = vm["taskfile"].as<std::string>();
+	return;
 }
 
 int main(int argc, char** argv) {
