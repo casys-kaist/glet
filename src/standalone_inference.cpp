@@ -152,6 +152,8 @@ void PyTorchInit(){
 	return;
 }
 
+void getInputs(const char* netname, std::vector<torch::jit::IValue> &inputs, int batch_size){
+}
 
 void computeRequest(){
 	#ifdef DEBUG
@@ -185,4 +187,14 @@ void computeRequest(){
 	std::cout<< "waiting for 3 seconds after warmup" << std::endl;
 	usleep(3*1000*1000);
 
+	std::cout << "main jit-load: " << double(t2-t1)/1000000 <<\
+		"warmup: " << double(t3-t4)/1000000 << \
+	std::endl;
+
+	for (int i =0; i < g_numReqs; i++){
+		usleep(g_mean * 1000* 1000);
+		getInputs(netname,inputs,g_batchSize);
+		printTimeStampWithName(netname, "START EXEC");
+		inputs.clear();
+	}
 }
