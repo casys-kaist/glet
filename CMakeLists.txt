@@ -62,3 +62,14 @@ add_compile_definitions(DROP_DEBUG)
 add_executable(standalone_inference src/standalone_inference.cpp ${SCHEDULER_SRCS} ${COMMON_SRCS})
 target_link_libraries(standalone_inference "${TORCH_LIBRARIES}" ${OpenCV_LIBS} boost_program_options  boost_system nvidia-ml)
 set_property(TARGET standalone_inference PROPERTY CXX_STANDARD 14)     
+
+#---------client---------
+add_executable(client src/client.cpp
+        src/common/socket.cpp
+        src/common/img_utils.cpp
+        src/common/torch_utils.cpp
+        src/common/common_utils.cpp
+        src/common/exp_model.cpp
+        )
+target_link_libraries(client "${TORCH_LIBRARIES}" ${OpenCV_LIBS} boost_program_options  boost_system nvidia-ml)
+set_property(TARGET client PROPERTY CXX_STANDARD 14)
