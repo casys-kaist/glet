@@ -25,7 +25,20 @@ cv::Mat __resize_to_a_size(cv::Mat &image, int new_height, int new_width){
 
 // Normalize an image by subtracting mean and dividing by standard deviation
 cv::Mat __normalize_mean_std(cv::Mat &image, std::vector<double> mean, std::vector<double> std){
-  
+    // clone
+  cv::Mat image_normalized = image.clone();
+  // convert to float
+  image_normalized.convertTo(image_normalized, CV_32FC3);
+  // subtract mean
+  cv::subtract(image_normalized, mean, image_normalized);
+  // divide by standard deviation
+  std::vector<cv::Mat> img_channels(3);
+  cv::split(image_normalized, img_channels);
+  img_channels[0] = img_channels[0] / std[0];
+  img_channels[1] = img_channels[1] / std[1];
+  img_channels[2] = img_channels[2] / std[2];
+  cv::merge(img_channels, image_normalized);
+  return image_normalized;
 }
 
 // Preprocess
