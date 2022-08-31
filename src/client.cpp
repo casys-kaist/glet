@@ -324,7 +324,62 @@ void *sendRequest(void *vp){
 #ifdef DEBUG
 		start = getCurNs();
 #endif
-	
+	if(g_useIMG){
+			std::vector<cv::Mat> input_images;
+			int rand_val = std::rand() % (g_batchSize * BATCH_BUFFER);
+			torch::Tensor input = g_inputImgTensor[rand_val];
+#ifdef DEBUG   
+			printf("IMG input tensor dimension: ");
+			for(int j =0; j<input.dim(); j++ )
+				printf("%lu, ",input.size(j));
+			printf("\n");
+#endif 
+#ifndef NO_NET 	
+			sendTensorFloat(g_socketFD ,i ,input);
+#endif
+#ifdef DEBUG
+			std::cout <<"sending " << i+1 << "as tid to serverr "<<std::endl;
+#endif
+			socket_txsize(g_socketFD, i+1);
+
+		}
+		if(g_useMNIST){
+			int rand_val = std::rand() % (g_batchSize * BATCH_BUFFER);
+			torch::Tensor input = g_MNISTData[rand_val];
+#ifdef DEBUG   
+			printf("MNIST input tensor dimension: ");
+			for(int j =0; j<input.dim(); j++ )
+				printf("%lu, ",input.size(j));
+			printf("\n");
+#endif 
+#ifndef NO_NET
+			sendTensorFloat(g_socketFD, i, input);
+#endif
+#ifdef DEBUG
+			std::cout <<"sending " << i+1 << "as tid to serverr "<<std::endl;
+#endif
+			socket_txsize(g_socketFD, i+1);
+
+		}
+		if(g_useNLP){
+
+			int rand_val = std::rand() % (g_batchSize * BATCH_BUFFER);
+			torch::Tensor input = g_tokenData[rand_val];
+#ifdef DEBUG   
+			printf("NLP input tensor dimension: ");
+			for(int j =0; j<input.dim(); j++ )
+				printf("%lu, ",input.size(j));
+			printf("\n");
+#endif 
+#ifndef NO_NET
+			sendTensorLong(g_socketFD, i, input);
+#endif
+#ifdef DEBUG
+			std::cout <<"sending " << i+1 << "as tid to serverr "<<std::endl;
+#endif
+			socket_txsize(g_socketFD, i+1);
+
+		}
 		// need to send task id to frontend
 		gp_reqStartTime[i] = getCurNs();
 #ifdef DEBUG
