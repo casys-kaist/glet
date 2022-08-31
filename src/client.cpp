@@ -438,7 +438,25 @@ pthread_t initRecvThread() {
 }
 void* recvRequest(void *vp)
 {
-	
+	int taskID;
+	int opt_val = 1;
+	int task_cnt=0;
+	while (task_cnt < g_numReqs)
+	{
+		taskID = socket_rxsize(g_socketFD);
+		if (setsockopt(g_socketFD, IPPROTO_TCP, TCP_QUICKACK, &opt_val, sizeof(int)))
+		{
+			perror("recvResult setsocketopt");
+		}
+#ifdef DEBUG
+		std::cout << "DEBUG: recieved ACK for task ID :" << taskID << std::endl;
+		std::cout << "DEBUG: received " << task_cnt+1 << " so far" << std::endl;
+#endif 
+		// taskID is added by 1 when sent to server
+		gp_reqEndTime[taskID-1] = getCurNs();
+		task_cnt++;
+  	} 
+  	printTimeStampWithName(gc_charModelName_p, "END recv_request");
 	return (void*)0;
 }
 
