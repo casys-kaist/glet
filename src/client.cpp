@@ -123,6 +123,22 @@ torch::Tensor getInput(const char* net_name){
 
 }
 
+std::vector<int> readTraceFile(std::string path_to_trace_file){
+	std::ifstream infile(path_to_trace_file);
+	std::vector<int> ret_vec;
+	std::string line;
+	while(std::getline(infile,line))
+	{
+		std::istringstream iss(line);
+		float a;
+		if (! (iss >> a)) {break;}
+		ret_vec.push_back(int(a));
+
+	}
+	return ret_vec;
+}
+
+
 void setupGlobalVars(po::variables_map &vm){
 	g_skipResize = vm["skip_resize"].as<bool>(); 
 	g_rate =  vm["rate"].as<int>();
@@ -136,6 +152,7 @@ void setupGlobalVars(po::variables_map &vm){
 		if(vm["flux_file"].as<std::string>() != "no_file"){
 			g_useFluxFile=true;
 			std::cout << "USING flux file: " << vm["flux_file"].as<std::string>() << std::endl;
+			g_randRate=readTraceFile(vm["flux_file"].as<std::string>());
 		}
 		else{
 			std::cout<<"Must specify flux file when flag flux is set!" << std::endl;
