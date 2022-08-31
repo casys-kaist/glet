@@ -70,7 +70,6 @@ CMakeCache.txt
 
 # csvs and txts
 *.csv
-*.txt
 stats-util/
 nvprof-*
 
