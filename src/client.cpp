@@ -236,6 +236,13 @@ std::vector<torch::Tensor> readMNISTData(std::string data_root){
 	return ret_vector;
 }
 
+void generateTokenIDs(std::vector<torch::Tensor> &global_mem, std::string task){
+	for(int i =0; i < g_batchSize * BATCH_BUFFER; i++){
+		global_mem.push_back(getInput(task.c_str()));
+	}    
+}
+
+
 void readInputData(po::variables_map &vm){
 	/*reads image data*/
 	// reads BATCH_BUFFER times more images than it will be read
@@ -271,7 +278,6 @@ void readInputData(po::variables_map &vm){
 	if(g_useNLP){
 		generateTokenIDs(g_tokenData, g_model);
 	}
-
 
 }
 
