@@ -295,7 +295,7 @@ pthread_t initSendThread(){
 
 
 void *sendRequest(void *vp){
-
+	ExpModel *p_rand_model = new ExpModel();
 	int ret;
 	// send request name (before sending data)a
 	socket_send(g_socketFD, (char*)g_model.c_str(), MAX_REQ_SIZE, false);
@@ -313,9 +313,35 @@ void *sendRequest(void *vp){
 	l_rand_mean = g_randMean;
 	printTimeStampWithName(gc_charModelName_p, "START send_request");
 	for (uint64_t i =0; i < g_numReqs; i++){
-	
-		wait_milli = l_rand_mean  * 1000;
-		
+
+	if(g_useFlux){
+			// if rate is fluctuating follow, do it until FLUX_INTERVAL seconds
+			if(double(getCurNs() - last_flux)/1000000000 > FLUX_INTERVAL){
+				double old_rand_mean = l_rand_mean;
+				if(g_useFluxFile){
+					l_rand_mean = getNextRandMean(g_randRate);             
+#ifdef DEBUG
+					std::cout<<__func__<<": old mean interval: " << old_rand_mean << "new mean interval"<< l_rand_mean << std::endl;
+#endif
+				}
+				last_flux=getCurNs();	   
+			}
+		}
+		if(g_reqDist == "exp" ) {
+			double rand_mean=p_rand_model->randomExponentialInterval(l_rand_mean,1,1);
+			//DEBUG this becomes problematic when random interval becomes too small, need to regulate as following
+			/*
+			   if(l_rand_mean <0.001 && rand_mean < l_rand_mean*0.85){
+			   rand_mean = l_rand_mean * 0.85;
+			   }
+			   */
+			wait_milli = rand_mean * 1000;
+		}
+		else if(g_reqDist == "uni") wait_milli = l_rand_mean  * 1000;
+		else{
+			printf("unrecognized distribution: %s, exiting now \n", g_reqDist.c_str());
+			exit(1);
+		}	
 #ifdef DEBUG
 		printf("waiting for %lf milliseconds \n", wait_milli);
 #endif   
