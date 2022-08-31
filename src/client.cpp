@@ -313,7 +313,6 @@ void *sendRequest(void *vp){
 	l_rand_mean = g_randMean;
 	printTimeStampWithName(gc_charModelName_p, "START send_request");
 	for (uint64_t i =0; i < g_numReqs; i++){
-
 	if(g_useFlux){
 			// if rate is fluctuating follow, do it until FLUX_INTERVAL seconds
 			if(double(getCurNs() - last_flux)/1000000000 > FLUX_INTERVAL){
