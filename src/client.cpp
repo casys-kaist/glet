@@ -295,6 +295,44 @@ pthread_t initSendThread(){
 
 
 void *sendRequest(void *vp){
+
+	int ret;
+	// send request name (before sending data)a
+	socket_send(g_socketFD, (char*)g_model.c_str(), MAX_REQ_SIZE, false);
+	// send how many inputs to expect for this app
+	int num_input=0; // number of tesnors to send, according to application
+	num_input = (g_useIMG && 1) + (g_useMNIST && 1) + (g_useNLP && 1);
+	printf("number of inputs to send: %d \n", num_input);
+	socket_txsize(g_socketFD, num_input);
+	uint64_t start; 
+	uint64_t end;
+	double wait_milli;
+	uint64_t last_flux=getCurNs();
+	double l_rand_mean;
+	
+	l_rand_mean = g_randMean;
+	printTimeStampWithName(gc_charModelName_p, "START send_request");
+	for (uint64_t i =0; i < g_numReqs; i++){
+	
+		wait_milli = l_rand_mean  * 1000;
+		
+#ifdef DEBUG
+		printf("waiting for %lf milliseconds \n", wait_milli);
+#endif   
+		usleep(wait_milli * 1000);
+		//form request(s)
+#ifdef DEBUG
+		start = getCurNs();
+#endif
+	
+		// need to send task id to frontend
+		gp_reqStartTime[i] = getCurNs();
+#ifdef DEBUG
+		end = getCurNs(); 
+		std::cout << "Sending Time: " << std::to_string(double(end-start)/1000000) << " for Request ID "<< i+1<<std::endl;
+#endif
+	}
+	delete p_rand_model;
 	return (void*)0;
     
 }
