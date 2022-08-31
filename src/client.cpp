@@ -223,6 +223,19 @@ std::vector<cv::Mat> readImgData(const char *path_to_txt, int batch_size, std::s
 	return imgs;    
 }
 
+std::vector<torch::Tensor> readMNISTData(std::string data_root){
+	std::vector<torch::Tensor> ret_vector;
+	auto mnist_data_loader = torch::data::make_data_loader(
+			torch::data::datasets::MNIST(data_root+"/mnist").map(
+				torch::data::transforms::Stack<>()),
+			/*batch_size=*/1);
+	for (torch::data::Example<>& batch : *mnist_data_loader) {
+		torch::Tensor temp = batch.data;
+		ret_vector.push_back(temp);
+	}
+	return ret_vector;
+}
+
 void readInputData(po::variables_map &vm){
 	/*reads image data*/
 	// reads BATCH_BUFFER times more images than it will be read
