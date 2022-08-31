@@ -191,6 +191,38 @@ void setupGlobalVars(po::variables_map &vm){
 	g_portNo = vm["portno"].as<int>();
 }
 
+
+std::vector<cv::Mat> readImgData(const char *path_to_txt, int batch_size, std::string data_root_dir){
+	std::ifstream file(path_to_txt);
+	std::string img_file;
+	std::vector<cv::Mat> imgs;
+	for (int i = 0; i < batch_size; i++)
+	{
+		if (!getline(file, img_file))
+			break;
+		cv::Mat img;
+		std::string full_name = data_root_dir + "/" + img_file;
+		img = cv::imread(full_name, cv::IMREAD_COLOR);
+		if (img.empty())
+			LOG(ERROR) << "Failed to read  " << full_name << "\n";
+		#ifdef DEBUG
+		LOG(ERROR) << "dimensions of " << full_name << "\n";
+		LOG(ERROR) << "size: " << img.size() << "\n"
+			<< "row: " << img.rows << "\n"
+			<< "column: " << img.cols << "\n"
+			<< "channel: " << img.channels() << "\n";
+		#endif
+		imgs.push_back(img);
+	}
+	if (g_batchSize < 1) {LOG(FATAL) << "No images read!"; exit(1);}
+
+	std::vector<cv::Mat>::iterator it;
+#ifdef DEBUG
+	LOG(ERROR) << "read " <<g_batchSize << "images \n";
+#endif
+	return imgs;    
+}
+
 void readInputData(po::variables_map &vm){
 	/*reads image data*/
 	// reads BATCH_BUFFER times more images than it will be read
@@ -299,4 +331,3 @@ int main(int argc, char** argv) {
         printTimeStampWithName(gc_charModelName_p, "END PROGRAM");
         return 0;
 }
-
