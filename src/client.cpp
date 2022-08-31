@@ -192,6 +192,41 @@ void setupGlobalVars(po::variables_map &vm){
 }
 
 void readInputData(po::variables_map &vm){
+	/*reads image data*/
+	// reads BATCH_BUFFER times more images than it will be read
+	if(g_useIMG){
+		std::string path_to_txt = vm["input"].as<std::string>();
+		g_inputData = readImgData(path_to_txt.c_str(), g_batchSize*BATCH_BUFFER, vm["root_data_dir"].as<std::string>());
+		std::cout << "Read " << g_inputData.size() << " images " << std::endl;
+		std::vector<cv::Mat> input_images;
+		for (unsigned int i = 0; i < g_inputData.size(); i++)
+		{
+			input_images.clear();
+			torch::Tensor input;
+			input_images.push_back(g_inputData[i]);
+			if (!g_skipResize)
+				input = serialPreprocess(input_images, IMAGENET_ROW, IMAGENET_COL);
+			else
+				input = convert_images_to_tensor(input_images);
+			g_inputImgTensor.push_back(input);
+		}
+	}
+
+	/*reads mnist data set*/
+	if(g_useMNIST){
+#ifdef  DEBUG
+		std::cout << "READ MNIST" << std::endl;
+#endif
+		std::string DATA_ROOT= vm["root_data_dir"].as<std::string>();
+		g_MNISTData = readMNISTData(DATA_ROOT);
+	}
+
+	/*generates NLP data*/
+	// for now we generate a random vector for input data(simulating token IDs)
+	if(g_useNLP){
+		generateTokenIDs(g_tokenData, g_model);
+	}
+
 
 }
 
