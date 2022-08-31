@@ -124,6 +124,54 @@ torch::Tensor getInput(const char* net_name){
 }
 
 void setupGlobalVars(po::variables_map &vm){
+	g_skipResize = vm["skip_resize"].as<bool>(); 
+	g_rate =  vm["rate"].as<int>();
+	assert(g_rate!=0);
+	g_randMean = double(1.0)/ g_rate;
+	g_model  = vm["task"].as<std::string>(); 
+	gc_charModelName_p = g_model.c_str();
+	g_useFluxFile=false;
+	g_useFlux = vm["flux"].as<bool>();
+	if(g_useFlux){
+		if(vm["flux_file"].as<std::string>() != "no_file"){
+			g_useFluxFile=true;
+			std::cout << "USING flux file: " << vm["flux_file"].as<std::string>() << std::endl;
+		}
+		else{
+			std::cout<<"Must specify flux file when flag flux is set!" << std::endl;
+			exit(1);
+		}
+
+	}
+	g_standRate=0;
+
+	g_reqDist= vm["dist"].as<std::string>();
+	g_numReqs=vm["requests"].as<int>();
+	if(g_model == "lenet1"){
+		g_useIMG=0;
+		g_useMNIST=1;
+		g_useNLP=0;
+	}
+	else if(g_model == "game"){
+		g_useIMG=1;
+		g_useMNIST=1;
+		g_useNLP=0;
+	}
+	else if(g_model == "bert"){
+		g_useIMG=0;
+		g_useMNIST=0;
+		g_useNLP=1;   
+	}
+	else { // traffic, ssd-mobilenetv1, and etc.
+		g_useIMG=1;
+		g_useMNIST=0;
+		g_useNLP=0;   
+
+	}
+	g_batchSize= vm["batch"].as<int>();
+	assert(g_batchSize!=0);
+	g_hostName = vm["hostname"].as<std::string>();
+	g_portNo = vm["portno"].as<int>();
 }
 
 void readInputData(po::variables_map &vm){
