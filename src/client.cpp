@@ -282,6 +282,15 @@ void readInputData(po::variables_map &vm){
 }
 
 
+double getNextRandMean(std::vector<int> &rand_rates){
+	static int s_count=0;
+	int index = s_count++ % rand_rates.size();
+#ifdef DEBUG
+	std::cout << "[getNextRandMean] index: " << index << ", rate: " << rand_rates[index] << std::endl;
+#endif 
+	if(rand_rates[index]<0.001) return 0.0;
+	return 1.0 / double(rand_rates[index]);
+}
 
 pthread_t initSendThread(){
 	pthread_attr_t attr;
@@ -429,7 +438,8 @@ pthread_t initRecvThread() {
 }
 void* recvRequest(void *vp)
 {
-	return 0;
+	
+	return (void*)0;
 }
 
 int main(int argc, char** argv) {
