@@ -88,5 +88,17 @@ typedef struct _proxy_info {
 } proxy_info;
 
 
+
+int readInputTypesJSONFile(const char * configJSON, std::unordered_map<int,std::string> &input_map, std::unordered_map<int,std::string> &output_map);
+int connectGPUProxyIn(int gpuid, int thredcap, int dedup);
+int connectGPUProxyOut(int gpuid, int threadcap, int dedup);
+int sendRequest(int in_fd, int rid, int jobid,torch::Tensor &input_tensor); 
+int sendRequest(int in_fd, int rid, int jobid, std::vector<int64_t> &dims); 
+torch::Tensor recvResult(proxy_info *pPInfo, int batch_size, int req_id);
+std::string proxy_info_to_string(proxy_info* pPInfo);
+// send requests to backend
+int sendRequestToBackend(int input_socket_fd,int rid, int jid, torch::Tensor &input_tensor);
+
+
 #else
 #endif
