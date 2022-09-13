@@ -50,9 +50,35 @@ proxy_info* LoadBalancer::choseProxy(int model_id){
 
 // wrapper function: returns whether the proxy is supposed to take the task(model_name)
 bool LoadBalancer::checkLoad(int model_id, proxy_info* pPInfo){
+	std::unique_lock<std::mutex> lk(_mtx);
+	switch(_type){
+		case NO:
+			return true;
+		case WRR:
+			return checkWRR(model_id,pPInfo);
+		default: // should not happen
+			exit(1);      
+	};
+	return false;
 }
 
 bool LoadBalancer::checkWRR(int model_id, proxy_info* pPInfo){
+		int key = getKey(model_id,pPInfo);
+	// DO NOT ERASE the following checking code.
+	// the proxy thread sometimes call checkWRR even it is not supposed to execute the model
+	// this happens during trasitions of scehduling period, just make it return FAIL
+	auto it = _keyToCurrCreditMapping.find(key);
+	if(it == _keyToCurrCreditMapping.end()){
+		return EXIT_FAILURE;        
+	}
+	if(checkMinCredit(model_id,key)){
+		// update model's credit, and keys currnet credit
+		_keyToCurrCreditMapping[key]+=_keyToCreditMapping[key];
+		_TaskIDToMinCreditMapping[model_id]=_keyToCurrCreditMapping[key];
+		return true;
+	} 
+	// update fail count and allocate task
+	return false;
 }
 
 
