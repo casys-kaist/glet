@@ -27,6 +27,23 @@ void LoadBalancer::clearTables(){
 }
 
 void LoadBalancer::setType(std::string balancer_type){
+	if(balancer_type == "no"){
+		_type=NO;
+	}
+	else if(balancer_type == "wrr"){
+		_type=WRR;
+	}
+	else{
+		std::cout << "Unrecognized Load Balancer Type: " << balancer_type
+			<<std::endl;
+		std::cout << "Exiting NOW!"
+			<<std::endl;
+		exit(1);
+	}
+#ifdef LB_DEBUG
+	std::cout << __func__ << ": setted LB type:  " << _type
+		<<std::endl;
+#endif
 }
 
 // wrapper function: updates internal tables, returns whether successful or not 
