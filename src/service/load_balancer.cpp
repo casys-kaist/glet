@@ -69,8 +69,6 @@ int LoadBalancer::getKey(int model_id, int gpu_id, int part, int dedup_num){
 	return MODEL_ID_SHIFT * model_id + PART_SHIFT * part +  GPU_ID_SHIFT * gpu_id + 1 * dedup_num;
 }
 
-bool LoadBalancer::containModelID(int key, int model_id){
-}
 int LoadBalancer::checknCreateMtx(int model_id){
 }
 // returns whether the credit hold by 'key' for model_id is smaller than min
