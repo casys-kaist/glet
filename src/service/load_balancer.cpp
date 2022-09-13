@@ -13,10 +13,17 @@
 #define GPU_ID_SHIFT 10
 
 LoadBalancer::LoadBalancer(){
+	// turns off load balancing by default
+	_type=NO;
 }
 
 LoadBalancer::~LoadBalancer(){}
 void LoadBalancer::clearTables(){
+	_TaskIDtoKeysMapping.clear();
+	_keyToCreditMapping.clear();
+	//_keyToFailMapping.clear();
+	_keyToCurrCreditMapping.clear();
+	_TaskIDToMinCreditMapping.clear();
 }
 
 void LoadBalancer::setType(std::string balancer_type){
