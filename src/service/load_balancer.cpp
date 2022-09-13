@@ -57,10 +57,16 @@ bool LoadBalancer::checkWRR(int model_id, proxy_info* pPInfo){
 
 
 int LoadBalancer::getKey(int model_id, proxy_info* pPInfo){
+	return getKey(model_id, pPInfo->dev_id,pPInfo->cap,pPInfo->dedup_num);
 }
 
 // returns hash key
 int LoadBalancer::getKey(int model_id, int gpu_id, int part, int dedup_num){
+	// model_id: 0 ~ LARGE NUMBER
+	// part: 20,40,50,60,80,100
+	// gpu_id: 0~20 
+	// dedup_num: 0~5 
+	return MODEL_ID_SHIFT * model_id + PART_SHIFT * part +  GPU_ID_SHIFT * gpu_id + 1 * dedup_num;
 }
 
 bool LoadBalancer::containModelID(int key, int model_id){
