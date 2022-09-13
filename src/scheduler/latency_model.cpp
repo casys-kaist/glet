@@ -40,12 +40,19 @@ void LatencyModel::setupTable(std::string TableFile){
         _perModelBatchVec[model][new_entry.part].push_back(new_entry.batch);      
     } 
 }
+
 // acts like an hash key
-int LatencyModel::makeKey(int batch, int part){ 
+int LatencyModel::makeKey(int batch, int part){
+    return batch*1000 + part;
 }
 
 Entry* LatencyModel::parseKey(int key){
+    Entry *new_entry  = new Entry();
+    new_entry->batch = key/1000;
+    new_entry->part =  key % 1000;
+    return new_entry;
 }
+
 
 std::pair<int,int> findBatchpair(std::vector<int> &list, int batch, int part)
 {
