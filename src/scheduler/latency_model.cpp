@@ -129,6 +129,25 @@ std::pair<int,int> findBatchpair(std::vector<int> &list, int batch, int part)
  }
 
 float LatencyModel::getLatency(std::string model, int batch, int part){
+    assert(MIN_BATCH <= batch && batch <= MAX_BATCH);
+    if (model == "lenet1" || model == "lenet2" || model == "lenet3" \
+    || model == "lenet4" || model == "lenet5" || model=="lenet6"){
+        model="lenet1";
+    }
+    // if not found, return 0
+    if (_perModelLatnecyTable.find(model) == _perModelLatnecyTable.end())
+    {
+        return 0.0;
+    }    
+    // try to find part
+    int tmp_key = makeKey(batch,part);
+    auto it = _perModelLatnecyTable[model]->find(tmp_key);
+    if (it == _perModelLatnecyTable[model]->end()){
+        //if not found, return interpolated latency
+        return getBatchPartInterpolatedLatency(model, batch, part);
+    }
+    // if found, just use the part 
+    return getBatchInterpolatedLatency(model,batch,part);
 }
 
 
