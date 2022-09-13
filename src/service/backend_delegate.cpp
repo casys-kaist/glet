@@ -60,4 +60,14 @@ std::string BackendDelegate::getType(){
 }
 
 int BackendDelegate::updateNGPUS(){
+	const int PARAM_NUM=3;
+	int dummy_arg1 = 0;
+	int dummy_arg2 = 0;
+	socket_txsize(_control_socket_fd,PARAM_NUM);
+	socket_txsize(_control_socket_fd,BACKEND_GET_NGPUS);
+	socket_txsize(_control_socket_fd,dummy_arg1);
+	socket_txsize(_control_socket_fd, dummy_arg2);
+	int ngpu=socket_rxsize(_control_socket_fd);
+	_nGPUs= ngpu;
+	return EXIT_SUCCESS;
 }
