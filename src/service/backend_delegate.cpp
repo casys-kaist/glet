@@ -21,17 +21,65 @@ void BackendDelegate::setEmulatingMode(bool flag){
 }
 
 int connectChannel(std::string backend_addr){
+#ifdef FRONTEND_DEBUG
+	std::cout << __func__ <<": received address for connection: " << backend_addr
+		<< std::endl;
+#endif
+	std::stringstream temp_s(backend_addr);
+	std::vector<std::string> results;
+	// string = 'addr:portno'
+	while(temp_s.good()){
+		std::string substr;
+		std::getline(temp_s,substr,':');
+		results.push_back(substr);
+	} 
+	assert(results.size() == 2);
+	// addr
+	std::string addr =  results[0];
+	//portno
+	int portno = std::stoi(results[1]);
+	//const char *c = _addr.c_str();
+	int socketfd = client_init((char *)addr.c_str(), portno, true);
+	if (socketfd < 0){
+		std::cout << __func__ << ": connection to " << addr << ":" << portno << " failed!"
+			<< std::endl;
+		return -1;
+	}
+	char buf;
+	buf=1;
+
+	return socketfd;
 }
 int BackendDelegate::connectNewDataChannel(){
+	int data_socket = connectChannel(_backend_data_addr);
+#ifdef FRONTEND_DEBUG
+	std::cout << __func__ << ": connected new data channel with socket: " << data_socket
+		<<std::endl;
+#endif
+
+	return data_socket;
 }
 int BackendDelegate::connectCtrlChannel(std::string backend_addr){
+	_control_socket_fd =  connectChannel(backend_addr);
+	if(_control_socket_fd == -1){
+		return -1;
+	}
+#ifdef FRONTEND_DEBUG
+	std::cout << __func__ << ": connected new control channel with socket: " << _control_socket_fd
+		<<std::endl;
+#endif
+	return _control_socket_fd;
 }
 
 // disconnect from backend address
 int BackendDelegate::disconnectDataChannel(int data_socket_fd){
+	assert(data_socket_fd);
+	socket_close(data_socket_fd, false);
 }
 
 int BackendDelegate::disconnectCtrlChannel(){
+	assert(_control_socket_fd);
+	socket_close(_control_socket_fd, false);
 }
 
 int BackendDelegate::getControlFD()
