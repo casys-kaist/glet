@@ -69,8 +69,19 @@ int LoadBalancer::getKey(int model_id, int gpu_id, int part, int dedup_num){
 	return MODEL_ID_SHIFT * model_id + PART_SHIFT * part +  GPU_ID_SHIFT * gpu_id + 1 * dedup_num;
 }
 
+
+bool LoadBalancer::containModelID(int key, int model_id){
+	int _model_id = key / MODEL_ID_SHIFT;
+	return model_id == _model_id;
+}
 int LoadBalancer::checknCreateMtx(int model_id){
+	auto it = _TaskIDtoMtxMapping.find(model_id);
+	if(it==_TaskIDtoMtxMapping.end()){
+		_TaskIDtoMtxMapping[model_id]=new std::mutex();
+	}
+	return EXIT_SUCCESS;
 }
 // returns whether the credit hold by 'key' for model_id is smaller than min
 bool LoadBalancer::checkMinCredit(int model_id, int key){
+	return _keyToCurrCreditMapping[key] <= _TaskIDToMinCreditMapping[model_id];
 }
