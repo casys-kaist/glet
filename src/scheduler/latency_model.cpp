@@ -56,6 +56,28 @@ Entry* LatencyModel::parseKey(int key){
 
 std::pair<int,int> findBatchpair(std::vector<int> &list, int batch, int part)
 {
+    assert(MIN_BATCH < batch && batch < MAX_BATCH);
+    std::pair<int,int> retPair;
+    std::vector<int>::iterator it;
+    int lowerbatch = batch;
+    while(true){
+        it=find(list.begin(), list.end(), lowerbatch);
+        if(it !=list.end()) {
+           retPair.first=lowerbatch;
+           break;
+        }
+        lowerbatch--;
+    }
+    int upperbatch = batch;
+    while(true){
+        upperbatch++;
+        it=find(list.begin(), list.end(), upperbatch);
+        if(it !=list.end()) {
+           retPair.second=upperbatch;
+           break;
+        }
+    }
+    return retPair;
 }
 
 
@@ -70,5 +92,24 @@ float LatencyModel::getLatency(std::string model, int batch, int part){
 
 
 float LatencyModel::getGPURatio(std::string model, int batch, int part){
+     assert(MIN_BATCH <= batch && batch <= MAX_BATCH);
+    if (model == "lenet1" || model == "lenet2" || model == "lenet3" \
+    || model == "lenet4" || model == "lenet5" || model=="lenet6"){
+        model="lenet1";
+    }
+    uint64_t p1,p2,p3,p4;
+    // if batch is in the table, lookup and return
+    if(batch == MIN_BATCH || batch == MAX_BATCH){
+        return _perModelGPURatioTable[model]->operator[](makeKey(batch,part));
+    } 
+    // if not, do interpolation
+    std::pair<int,int> two_batch = findBatchpair(_perModelBatchVec[model][part], batch, part);
+    int b1 = two_batch.first;
+    int b2 = two_batch.second;
+    float g1=_perModelGPURatioTable[model]->operator[](makeKey(b1,part));
+    float g2=_perModelGPURatioTable[model]->operator[](makeKey(b2,part));
+    assert(g1 != 0.0 && g2 != 0.0);
+    //2. do linear interpolation and return;
+    float ret_gpu_ratio = (g2-g1)/float(b2-b1) * (batch-b1) + g1;
+    return ret_gpu_ratio;
 }
-
