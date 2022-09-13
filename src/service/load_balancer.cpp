@@ -31,20 +31,76 @@ void LoadBalancer::setType(std::string balancer_type){
 
 // wrapper function: updates internal tables, returns whether successful or not 
 int LoadBalancer::updateTable(SimState &sched_results){
+	std::unique_lock<std::mutex> lk(_mtx);
+	switch(_type){
+		case NO:
+			return EXIT_SUCCESS;
+		case WRR:
+			return updateWRR(sched_results);
+		default: // should not happend
+			exit(1);
+	};
 }
 
 
 int LoadBalancer::updateTable(std::map<proxy_info *, std::vector<std::pair<int, double>>> &trps){
+	std::unique_lock<std::mutex> lk(_mtx);
+	if(_type == NO){
+		return EXIT_SUCCESS;
+	}
+	// clear previous table
+	clearTables();
+
+	// for task-partition , allocate tickets
+	for(auto pair_info : trps){
+		for(auto item : pair_info.second){
+			//checknCreateMtx(item.first);
+			int key = getKey(item.first, pair_info.first);
+			if(renewTable(item.first,key,item.second))
+				return EXIT_FAILURE;
+		}
+	}
+	return EXIT_SUCCESS;
 }
 
 int LoadBalancer::renewTable(int model_id, int key, double trpt){
+	_keyToCreditMapping[key] = 1/double(trpt);
+#ifdef LB_DEBUG
+	std::cout << "key: "<<key << "updated to " <<  _keyToCreditMapping[key]
+		<<std::endl;
+#endif
+
+	_keyToCurrCreditMapping[key]=static_cast<double>(0.0);
+	_TaskIDToMinCreditMapping[model_id]=static_cast<double>(10.0);
+	_TaskIDtoKeysMapping[model_id].push_back(key);
+	return EXIT_SUCCESS;
 
 }
 
 int LoadBalancer::updateWRR(SimState &sched_results){
+// clear previous table
+
+	clearTables();
+	// for task-partition , allocate tickets
+	for(auto gpu_ptr : sched_results.vGPUList){
+		for(auto node_ptr : gpu_ptr->vNodeList){
+			for(auto task_ptr : node_ptr->vTaskList){
+				//checknCreateMtx(task_ptr->id);
+				int key = getKey(task_ptr->id, gpu_ptr->GPUID, node_ptr->resource_pntg, node_ptr->dedup_num);
+				if(renewTable(task_ptr->id,key,task_ptr->throughput))
+					return EXIT_FAILURE;
+			}
+		}
+	}
+	// check for abnormal results (for debugging)
+	return EXIT_SUCCESS;
 }
 
 proxy_info* LoadBalancer::choseProxy(int model_id){
+	proxy_info* ret_proxy = NULL;
+	assert(ret_proxy != NULL);
+	return ret_proxy;
+
 }
 
 
