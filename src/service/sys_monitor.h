@@ -86,6 +86,17 @@ class SysMonitor{
 		void setNumProxyPerGPU(int n_proxy_per_gpu);
 		int getNumProxyPerGPU();
 
+		void setFlagTrackInterval(bool val);
+		bool isTrackInterval();
+
+		void setFlagTrackTrpt(bool val);
+		bool isTrackTrpt();
+
+		void setSysFlush(bool val);
+		bool isSysFlush();
+
+		std::vector<AppSpec> *getAppSpecVec();
+
 	
 		
 	private:
