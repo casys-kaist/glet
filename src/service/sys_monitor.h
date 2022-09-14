@@ -46,8 +46,46 @@ class SysMonitor{
 	public:
 		SysMonitor();
 		~SysMonitor();
-		// newley added method
-		// 1. setupProxy: setsup maps, vectors for proxy
+		void setupProxy(proxy_info* pPInfo);
+
+		std::map<std::string, std::queue<std::shared_ptr<request>>>* getReqListHashTable();
+		std::queue<std::shared_ptr<request>>* getRequestQueueofNet(std::string str_req_name);
+		bool isQueueforNet(std::string str_req_name);
+		void addNewQueueforNet(std::string str_req_name);
+		std::vector<std::string>* getVectorOfNetNames();
+		uint32_t getLenofReqQueue(std::string str_req_name);
+		moodycamel::ConcurrentQueue<std::shared_ptr<request>>* getCompQueue();
+		std::deque<std::shared_ptr<TaskSpec>>* getBatchQueueofProxy(proxy_info* pPInfo);
+
+		void insertToBatchQueueofProxy(proxy_info* pPInfo, std::shared_ptr<TaskSpec> task_spec);
+		uint32_t getSizeofBatchQueueofProxy(proxy_info *pPInfo);
+		
+		std::vector<std::pair<std::string, int>>* getProxyNetList(proxy_info* pPInfo);
+		uint32_t getProxyNetListSize(proxy_info* pPInfo);
+		void insertNetToProxyNetList(proxy_info* pPInfo, std::pair<std::string, int>& pair);
+		bool isProxyNetListEmpty(proxy_info* pPInfo);
+
+		std::vector<proxy_info*> *getDevMPSInfo(int dev_id);
+		void insertMPSInfoToDev(int dev_id, proxy_info* pPInfo);
+		
+		int getIDfromModel(std::string net);
+		void setIDforModel(std::string net, int id);
+
+		// used for trackign per model rate
+		int getPerModelCnt(std::string model);
+		void setPerModelCnt(std::string model, int cnt);
+		void incPerModelCnt(std::string model);
+
+		// used for tracking per model trpt
+		int getPerModelFinCnt(std::string model);
+		void setPerModelFinCnt(std::string model, int cnt);
+		void incPerModelFinCnt(std::string model);
+
+		void setNGPUs(int ngpu);
+		int getNGPUs();
+		void setNumProxyPerGPU(int n_proxy_per_gpu);
+		int getNumProxyPerGPU();
+
 	
 		
 	private:
