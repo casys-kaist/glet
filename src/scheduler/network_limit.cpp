@@ -75,5 +75,28 @@ bool NetworkLimitChecker::isBandwidthOK(GPUPtr gpu_ptr){
 }
 
 int NetworkLimitChecker::adjustBatchSizetoNetBW(TaskPtr &task_ptr, GPUPtr &to_be_inserted_gpu){
- 
+    // 1. first get remainin bandwidth
+    double remain_bw = std::max(_limit_gbits - getrequiredbandwidth(to_be_inserted_gpu), 0.0);
+    #ifdef sched_debug
+    std::cout << __func__ <<": called with remaining bw : " << remain_bw << std::endl;
+    #endif
+    if(remain_bw == 0.0)
+        return exit_failure;
+    assert(task_ptr->batch_size && task_ptr->throughput); 
+    int curr_batch = task_ptr->batch_size;
+    float org_trpt = task_ptr->throughput;
+    for(int i = curr_batch; i>0;i--){
+        double request_required_throughput = ((i/double(curr_batch)) * task_ptr->throughput) * _taskidtorequiredbytesperrequest[task_ptr->id];
+        request_required_throughput = (request_required_throughput * 8 / 1024 / 1024/ 1024);
+        if(request_required_throughput <= remain_bw){
+            task_ptr->batch_size=i;
+            task_ptr->throughput = (i/float(curr_batch)) * task_ptr->throughput;
+            #ifdef sched_debug
+            std::cout << __func__ <<": changed from " << org_trpt << " to " << task_ptr->throughput
+            <<std::endl;
+            #endif
+            return exit_success;
+        }
+    }
+    return exit_failure;
 }
