@@ -103,9 +103,29 @@ class SysMonitor{
 		proxy_info* findProxy(int dev_id, int resource_pntg, int dedup_num);
 		proxy_info* findProxy(int dev_id, int partition_num);
 
-	
-		
 	private:
+		std::map<std::string, std::queue<std::shared_ptr<request>>> ReqListHashTable; // per request type queue
+		std::vector<std::string> _netNames;
+		moodycamel::ConcurrentQueue<std::shared_ptr<request>> *cmpQ;
+
+		std::map<proxy_info *, std::deque<std::shared_ptr<TaskSpec>> *> PerProxyBatchList; // list of tasks to batch for each [dev,cap] pair
+		std::map<proxy_info *, std::vector<std::pair<std::string, int>>> PerProxyNetList; // used in MPS_STATIC,list of available tasks in proxy, stores [{modelname, batch_size}]
+		std::map<int, std::vector<proxy_info *>> PerDevMPSInfo;
+		std::map<std::string, int> PerModeltoIDMapping;
+		// used for trackign per model rate
+		std::map<std::string, uint64_t> PerModelCnt;
+		// used for tracking per model trpt
+		std::map<std::string, int> PerModelFinCnt;
+		// used in backend, index conversion table from frontend view of ID, to actual GPU ID in host
+		std::map<int, int> FrontDevIDToHostDevID;
+
+		int nGPUs;		  // number of GPUS
+		int nProxyPerGPU; // number of proxys per gpu
+
+		std::vector<AppSpec> AppSpecVec;
+		bool _TRACK_INTERVAL;
+		bool _TRACK_TRPT;
+		bool _SYS_FLUSH;
 };
 
 #endif 
