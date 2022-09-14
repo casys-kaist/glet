@@ -27,6 +27,16 @@
 #include "backend_proxy_ctrl.h"
 
 
+typedef struct _TaskSpec{
+	int device_id;
+	std::string ReqName;
+	int BatchSize;
+	int dedup_num;
+	int CapSize; // maximum amount of cap for this task, used in MPS environment
+	proxy_info* proxy;
+} TaskSpec; // mostly used for scheduling
+
+
 class SysMonitor{
 	public:
 		SysMonitor();
