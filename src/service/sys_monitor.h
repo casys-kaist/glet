@@ -36,16 +36,21 @@ typedef struct _TaskSpec{
 	proxy_info* proxy;
 } TaskSpec; // mostly used for scheduling
 
+typedef struct _load_args{
+	proxy_info *pPInfo;
+	std::vector<std::pair<int,int>> model_ids_batches;
+} load_args;
+
 
 class SysMonitor{
 	public:
 		SysMonitor();
 		~SysMonitor();
-
+		// newley added method
+		// 1. setupProxy: setsup maps, vectors for proxy
+	
 		
 	private:
 };
-
-
 
 #endif 
