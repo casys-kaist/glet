@@ -46,6 +46,34 @@ int NetworkLimitChecker::setupPerTaskInputDimension(std::string json_file){
     return EXIT_SUCCESS;   
 }
 
+double NetworkLimitChecker::getRequiredBandwidth(GPUPtr gpu){
+    double sum_of_req_bandwidth=0;
+    for(auto node_ptr : gpu->vNodeList){
+        for(auto task_ptr : node_ptr->vTaskList){
+                sum_of_req_bandwidth += double(task_ptr->throughput) * _taskIDtoRequiredBytesPerRequest[task_ptr->id];
+        }
+    }
+    // return in gbits
+    return (sum_of_req_bandwidth*8)/ 1024 / 1024/ 1024;
+}
+
+// returns false if NOT OK, true if OK
+bool NetworkLimitChecker::isBandwidthOK(SimState decision){
+       for(auto gpu_ptr : decision.vGPUList ){
+           if(!isBandwidthOK(gpu_ptr)) return false;
+       }
+       return true;
+}
+
+bool NetworkLimitChecker::isBandwidthOK(GPUPtr gpu_ptr){
+    double gbit_bandwidth = getRequiredBandwidth(gpu_ptr);
+    #ifdef SCHED_DEBUG
+        std::cout << __func__ << ": gpu_id: "<< gpu_ptr->GPUID <<", gbit_bandwidth: " << gbit_bandwidth << std::endl;
+    #endif
+    if(gbit_bandwidth > _LIMIT_GBITS) return false;
+    return true;
+}
+
 int NetworkLimitChecker::adjustBatchSizetoNetBW(TaskPtr &task_ptr, GPUPtr &to_be_inserted_gpu){
  
 }
