@@ -97,6 +97,12 @@ class SysMonitor{
 
 		std::vector<AppSpec> *getAppSpecVec();
 
+		// used in backend, index conversion table from frontend view of ID, to actual GPU ID in host
+		std::map<int, int>* getLocalIDToHostIDTable();
+
+		proxy_info* findProxy(int dev_id, int resource_pntg, int dedup_num);
+		proxy_info* findProxy(int dev_id, int partition_num);
+
 	
 		
 	private:
