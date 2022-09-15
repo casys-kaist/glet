@@ -342,6 +342,32 @@ void* recvInput(void* vp){
 }
 
 void* loadControl(void *args){
+		while(1){
+		std::unique_lock<std::mutex> lock(g_CqueueMtx);
+		g_CqueueCV.wait(lock, []{return g_ControlQueue.size() || g_exitFlag;});
+		if(g_exitFlag){
+			break;
+		}
+		QueueElem *q=g_ControlQueue.front();
+		g_ControlQueue.pop();
+		if(q->e_act == LOAD) loadModel(q,g_gpu_dev,true);
+		else if(q->e_act == UNLOAD) unloadModel(q->job_ID);
+		// should not happen
+		else{ 
+			printf("ERROR! CHECK your code for loadControl \n");
+		}
+		if(g_ControlQueue.size() == 0 && (gp_proxyCtrl->getProxyState(gp_PInfo) != EXITING) )
+		{
+			//print time stamp for debugging purposes
+#ifdef PROXY_LOG
+			std::cout << __func__ << ": marking proxy as RUNNING at " << timeStamp()
+				<<std::endl; 
+#endif
+			gp_proxyCtrl->markProxy(gp_PInfo, RUNNING);
+		}
+		freeMemory(q);
+	}
+	std::cout << "exiting loadControl thread" << std::endl;
 	
 }
 
