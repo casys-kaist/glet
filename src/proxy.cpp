@@ -159,7 +159,6 @@ void pushToQueue(QueueElem* input_elem, std::queue<QueueElem*> &queue, std::mute
 
 
 void* recvInput(void* vp){
-	
 	printTimeStampWithName(cp_str_recv, cp_str_start);
 	int server_sock, rc;
 	socklen_t len;
@@ -492,6 +491,119 @@ pthread_t initOutputThread(){
 }
 
 void* compute(void* vp){
+	c10::InferenceMode guard;
+	uint64_t com_start, com_end;
+	com_start=getCurNs();
+	printTimeStampWithName(cp_str_comp, cp_str_start);
+
+	std::vector<torch::jit::IValue> inputs;
+	torch::Tensor input;
+	torch::Tensor t;
+	initPyTorch();
+
+	g_readyFlag_compute=true;
+	while(!g_readyFlag_input || !g_readyFlag_output || !g_readyFlag_compute){}
+	printTimeStampWithName(cp_str_comp, cp_str_done);
+	gp_proxyCtrl->markProxy(gp_PInfo, RUNNING);
+	com_end = getCurNs();
+#ifdef PROXY_LOG
+	std::cout << "computing thread took " << double(com_end - com_start)/1000000 << " ms to initiate" << std::endl; 
+#endif
+
+	while(1){
+		//compute here
+		std::unique_lock<std::mutex> lock(g_IqueueMtx);
+		g_IqueueCV.wait(lock, []{return g_InputQueue.size() || g_exitFlag;});
+		if (g_InputQueue.size() ==0 && !g_receivingFlag && g_exitFlag ){
+			lock.unlock();
+			break;
+		}
+		g_computingFlag=true;
+		 QueueElem* q=g_InputQueue.front();
+		g_InputQueue.pop();
+		lock.unlock();
+#ifdef PROFILE
+		q->p_reqProf->setCPUCompStart(getCurNs());
+#endif 
+#ifdef PROXY_LOG
+		printf("started to execute request ID: %d \n", q->req_ID);
+#endif 
+
+#ifndef NO_NET
+		if(g_mappingIDtoInputDataType[q->job_ID] == "FP32"){
+			auto options(torch::kFloat32);
+			t=convert_rawdata_to_tensor(q->p_float32_indata, q->dims, options);
+		}
+		else if(g_mappingIDtoInputDataType[q->job_ID] == "INT64"){
+			auto options(torch::kInt64);
+			t=convert_rawdata_to_tensor(q->p_int64_indata, q->dims, options);
+		}
+#else 
+		t=getRandInput(q->job_ID,q->dims[0]);   
+#endif
+
+
+#ifdef PROXY_LOG
+		std::cout << __func__ <<": type of tensor " << t.dtype()
+			<<std::endl;
+		std::cout << __func__ <<": sizes " << t.sizes()
+			<<std::endl;
+#endif 
+		t=t.to(g_gpu_dev);
+		std::vector<torch::jit::IValue> inputs;
+		inputs.push_back(t);
+		{
+			int input_batch_size = t.size(0);
+#ifdef PROFILE
+			printf("setting gpu_start of req_id: %d \n", q->req_ID);
+			q->p_reqProf->setGPUStart(getCurNs());
+#endif
+
+			torch::IValue temp_output= g_modelTable[q->job_ID]->forward(inputs);
+			cudaDeviceSynchronize();
+#ifdef PROFILE
+			printf("setting gpu_end of req_id: %d \n", q->req_ID);
+			q->p_reqProf->setGPUEnd(getCurNs());
+			q->p_reqProf->setBatchSize(input_batch_size);
+#endif
+
+			torch::Tensor temp;
+			if (temp_output.isTensor()){
+				temp= temp_output.toTensor();
+			}
+			else if(temp_output.isTuple() && (q->job_ID == g_mappingFiletoID["ssd-mobilenetv1.pt"])){
+				temp=custom::getBoxforTraffic(temp_output.toTuple()->elements().at(0).toTensor(), 
+						temp_output.toTuple()->elements().at(1).toTensor(),
+						t);
+			}
+			else if(temp_output.isTuple() && (q->job_ID == g_mappingFiletoID["bert.pt"])){
+				// pick the only tuple for output
+				temp = temp_output.toTuple()->elements().at(0).toTensor();
+			}
+			else{ // not supposed to happen
+				printf("LOGIC ERROR \n ");
+				exit(1);
+			}
+			temp = temp.to(torch::kCPU);
+			temp.detach();
+			q->output = temp;
+
+			int output_batch_size = temp.size(0);
+			assert(input_batch_size == output_batch_size);
+#ifdef PROFILE
+			q->p_reqProf->setCPUPostEnd(getCurNs());
+#endif
+			//send output
+			pushToQueue(q,g_OutputQueue, g_OqueueMtx,g_OqueueCV);
+			g_computingFlag=false;
+
+		}// dummy scope for lowering shared_ptr use_counts 
+
+	}//infinite loop
+	if(g_exitFlag){
+		g_OqueueCV.notify_one();
+	}
+	std::cout << "exiting compute thread" << std::endl;
 	
 }
 
