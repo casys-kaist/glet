@@ -231,7 +231,33 @@ pthread_t initControlThread(){
 }
 
 int readInputDimsJsonFile(const char *configJSON, std::map<std::string, int> &mapping, std::unordered_map<int, std::vector<uint64_t>> &InputDimMapping){
-  
+    std::cout << __func__ << ": reading JSON File: " << configJSON
+    <<std::endl;
+    Json::Value root;
+    std::ifstream ifs;
+    ifs.open(configJSON);
+    Json::CharReaderBuilder builder;
+    JSONCPP_STRING errs;
+    if (!parseFromStream(builder, ifs, &root, &errs)) {
+        std::cout << __func__ << ": Failed parsing from stream" << std::endl;
+        std::cout << errs << std::endl;
+        ifs.close();
+        return EXIT_FAILURE;
+    }
+    for(unsigned int i=0; i< root["Models"].size(); i++){
+        std::string name = root["Models"][i]["name"].asString();
+        int id = root["Models"][i]["proxy_id"].asInt();
+		mapping[name]=id;
+        #ifdef DEBUG
+        std::cout << __func__ <<": setted up " << name.c_str() << " as " << id
+        <<std::endl;
+        #endif
+         for(unsigned int j=0; j<root["Models"][i]["input_dim"].size(); j++ ){
+            InputDimMapping[id].push_back(root["Models"][i]["input_dim"][j].asInt());
+        }
+    }
+    ifs.close();
+    return EXIT_SUCCESS;
 }
 
 
