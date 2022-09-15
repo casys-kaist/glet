@@ -101,6 +101,9 @@ std::unordered_map<int,std::string> g_mappingIDtoOutputDataType;
 
 
 void freeMemory(QueueElem* q){
+	free(q->p_reqProf);
+	q->output.reset();
+	free(q);
 }
 torch::Tensor getRandInput(int id, int batch_size){
 }
