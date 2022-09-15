@@ -26,6 +26,7 @@
 #include "load_balancer.h"
 #include "backend_proxy_ctrl.h"
 
+enum scheduler {MPS_STATIC, ORACLE};
 
 typedef struct _TaskSpec{
 	int device_id;
