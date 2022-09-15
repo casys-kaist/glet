@@ -185,7 +185,110 @@ pthread_t initInputThread(){
 }
 
 void* send_output(void* vp){
+	printTimeStampWithName(cp_str_send, cp_str_start);
+	int server_sock,rc;
+	socklen_t len;
+	int i;
+	int bytes_rec = 0;
+	struct sockaddr_un server_sockaddr; 
+	struct sockaddr_un client_sockaddr;
+	int cur_read;
+	int backlog = 10;
 
+	memset(&server_sockaddr, 0, sizeof(struct sockaddr_un));
+	memset(&client_sockaddr, 0, sizeof(struct sockaddr_un));
+
+	std::stringstream sockname;
+
+	sockname<<"/tmp/gpusock_output_"<<g_devID<<"_"<<g_threadCap<<"_"<<g_dedup;
+
+
+	server_sock = socket(AF_UNIX, SOCK_STREAM, 0);
+	if (server_sock == -1){
+		printf("SOCKET ERROR: %s\n", strerror(errno));
+		exit(1);
+	}   
+	server_sockaddr.sun_family = AF_UNIX;
+	strcpy(server_sockaddr.sun_path, sockname.str().c_str());
+	len=sizeof(server_sockaddr);
+
+	unlink(sockname.str().c_str());
+	setsockopt(server_sock, SOL_SOCKET, SO_REUSEADDR,NULL,1) ;
+	rc = bind(server_sock, (struct sockaddr *) &server_sockaddr, len);
+	if (rc == -1){
+		printf("BIND ERROR: %s\n", strerror(errno));
+		close(server_sock);
+		exit(1);
+	}
+
+	rc = listen(server_sock, backlog);
+	if (rc == -1){ 
+		printf("LISTEN ERROR: %s\n", strerror(errno));
+		close(server_sock);
+		exit(1);
+	}
+	printTimeStampWithName(server_sockaddr.sun_path, cp_str_listen);
+	g_readyFlag_output=true;
+	while(1){
+		g_waiting_output_conn=true;
+		int output_client_sock = accept(server_sock, (struct sockaddr *) &client_sockaddr, &len);
+		if (output_client_sock == -1){
+			printf("ACCEPT ERROR: %s\n", strerror(errno));
+			close(server_sock);
+			close(output_client_sock);
+			exit(1);
+		}
+		g_waiting_output_conn=false;
+		printTimeStampWithName(server_sockaddr.sun_path, cp_str_accepted);
+		while(1){
+			std::unique_lock<std::mutex> lock(g_OqueueMtx);
+			g_OqueueCV.wait(lock, []{return g_OutputQueue.size() || g_exitFlag;});
+			std::cout << "receiving: " <<  g_receivingFlag << " computing: "<< g_computingFlag <<   " g_InputQueue: " << g_InputQueue.size() 
+				<< " g_OutputQueue.size: " << g_OutputQueue.size() << " g_exitFlag: " << g_exitFlag 
+				<<std::endl;
+			if(!g_receivingFlag && g_InputQueue.size() ==0 && g_OutputQueue.size() ==0 && g_exitFlag){
+				break;
+			}
+			if(g_OutputQueue.empty()){
+				lock.unlock();
+				continue;
+			} 
+			 QueueElem* q =g_OutputQueue.front();
+#ifdef PROFILE
+			q->p_reqProf->setOutputStart(getCurNs());
+#endif 
+			g_OutputQueue.pop();
+			lock.unlock();
+			torch::Tensor otensor = q->output;
+			int dim = otensor.dim();
+
+			int len=1;
+			write(output_client_sock, (void *)&dim,sizeof(int));
+			for(int i=0; i<dim; i++){
+				int size = otensor.size(i);
+				write(output_client_sock, (void *)&size,sizeof(int));
+				len*=size;
+			}
+#ifndef NO_NET
+			float *raw_data=(float*)(q->output).data_ptr();
+			socket_send(output_client_sock, (char*)raw_data, len*sizeof(float), false); 
+#else
+#endif
+#ifdef PROFILE
+			q->p_reqProf->setOutputEnd(getCurNs());
+			q->p_reqProf->printTimes();
+#endif 
+
+#ifdef PROXY_LOG
+			std::cout << __func__ <<": output sent for req_id: " << q->req_ID <<" at: " << timeStamp() << std::endl;
+#endif
+			freeMemory(q);
+
+		} // inner infinite loop
+		socket_close(output_client_sock, true);
+		if(g_exitFlag) break;
+	}// outer infinit loop
+	std::cout << "exiting output thread" << std::endl;
 }
 
 
