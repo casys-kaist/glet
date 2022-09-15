@@ -111,6 +111,30 @@ void warmupModel(int id, int max_batch_size, torch::Device &gpu_dev)
 
 }
 
+po::variables_map parseOpts(int ac, char** av) {
+	// Declare the supported options.
+	po::options_description desc("Allowed options");
+	desc.add_options()("help,h", "Produce help message")
+		("common,com", po::value<std::string>()->default_value("../../pytorch-common/"),"Directory with configs and weights")
+		("devid,d", po::value<int>()->default_value(-1),"Device ID")
+		("threadcap,tc", po::value<int>()->default_value(100),"thread cap(used for designation)")
+		("dedup,dn", po::value<int>()->default_value(0),"identifier between same device and cap")
+		("config,cj", po::value<std::string>()->default_value("../proxy_config.json"),"file for configuring protocol")
+		("model_list", po::value<std::string>()->default_value("../ModelList.txt"),"file of a list of models to load")
+		("partition", po::value<int>()->default_value(0),"index of proxy in GPU")
+		("ngpu", po::value<int>()->default_value(2),"the total number of GPUs in this node(used in shared memory)")
+		("npart", po::value<int>()->default_value(7),"the total number of possible partitions(used in shared memory)");
+	po::variables_map vm;
+	po::store(po::parse_command_line(ac, av, desc), vm);
+	po::notify(vm);
+
+	if (vm.count("help")) {
+		std::cout << desc << "\n";
+		exit(1);
+	}
+	return vm;
+}
+
 void initPyTorch(){
 }
 
@@ -218,9 +242,25 @@ int main(int argc, char** argv){
 	main_start=getCurNs();
 	pthread_t compute,control, send, recv, load_control;
 	po::variables_map vm=parseOpts(argc, argv);
+	g_devID=vm["devid"].as<int>();
+	g_dedup=vm["dedup"].as<int>();
+	g_threadCap=vm["threadcap"].as<int>();
+	g_commonDir=vm["common"].as<std::string>() + "models/";
+	g_partIdx = vm["partition"].as<int>();
+	gp_PInfo = new proxy_info();
+	gp_PInfo->dev_id=g_devID;
+	gp_PInfo->partition_num = g_partIdx;
+
+	gp_proxyCtrl= new ProxyCtrl(/*clear_memory=*/false);
+	gp_proxyCtrl->markProxy(gp_PInfo, BOOTING);
+
 	readInputDimsJsonFile(vm["config"].as<std::string>().c_str(), g_mappingNametoID, g_inputDimMapping);
 	readInputTypesJSONFile(vm["config"].as<std::string>().c_str(), g_mappingIDtoInputDataType, g_mappingIDtoOutputDataType);
 
+	for(auto pair : g_mappingNametoID ){
+		std::string file_name = pair.first + ".pt";
+		g_mappingFiletoID[file_name] = pair.second;
+	}
 	std::stringstream ss;
 	ss<<"/tmp/nvidia-mps";
 	if(g_devID<4){
