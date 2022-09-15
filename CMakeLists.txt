@@ -73,3 +73,17 @@ add_executable(client src/client.cpp
         )
 target_link_libraries(client "${TORCH_LIBRARIES}" ${OpenCV_LIBS} boost_program_options  boost_system nvidia-ml)
 set_property(TARGET client PROPERTY CXX_STANDARD 14)
+
+#---------proxy---------
+add_executable(proxy src/proxy.cpp
+	src/common/common_utils.cpp
+	src/common/socket.cpp
+	src/common/shmem_ctrl.cpp
+	src/common/gpu_utils.cpp
+	src/common/gpu_proxy.cpp
+        src/service/proxy_ctrl.cpp
+	src/common/jsoncpp.cpp
+	)
+target_link_libraries(proxy "${TORCH_LIBRARIES}" ${OpenCV_LIBS} boost_program_options  boost_system nvidia-ml)
+set_property(TARGET proxy PROPERTY CXX_STANDARD 14)
+
