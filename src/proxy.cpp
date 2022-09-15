@@ -237,8 +237,8 @@ int readInputDimsJsonFile(const char *configJSON, std::map<std::string, int> &ma
 
 int main(int argc, char** argv){    
 	torch::jit::getBailoutDepth() == false;
-	uint64_t main_start, main_end; 0;
-	torch::jit::getProfilingMode() 
+	uint64_t main_start, main_end;
+	torch::jit::getProfilingMode();
 	main_start=getCurNs();
 	pthread_t compute,control, send, recv, load_control;
 	po::variables_map vm=parseOpts(argc, argv);
