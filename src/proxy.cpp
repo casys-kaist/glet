@@ -645,7 +645,25 @@ pthread_t initCopmuteThread(){
 	return tid;
 }
 void* control(void *args){
-
+#ifdef PROXY_LOG
+	std::cout << "[" << g_devID << "," << g_partIdx << "]" << "starting control thread" << std::endl;
+#endif 
+	while(true){
+		proxy_state curr_state;
+		curr_state=gp_proxyCtrl->getProxyState(gp_PInfo);
+		while(curr_state != EXITING){
+			std::cout << "STATE: " << curr_state << " at "<< timeStamp() <<std::endl;
+			usleep(1*1000*1000);
+			curr_state=gp_proxyCtrl->getProxyState(gp_PInfo);
+		}
+		g_exitFlag=true;
+		g_IqueueCV.notify_one();
+		g_OqueueCV.notify_one();
+		g_CqueueCV.notify_one();
+		break;
+	}
+	std::cout << "exiting control thread" << std::endl;
+	return (void*)0;
 }
 pthread_t initControlThread(){
 	pthread_attr_t attr;
