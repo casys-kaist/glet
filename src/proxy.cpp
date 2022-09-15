@@ -151,10 +151,194 @@ void loadModel(QueueElem*  q, torch::Device gpu_dev,bool warmup=false){
 
 
 void pushToQueue(QueueElem* input_elem, std::queue<QueueElem*> &queue, std::mutex &mtx, std::condition_variable  &cv){
+	mtx.lock();
+	queue.push(input_elem);
+	mtx.unlock();
+	cv.notify_all();
 }
 
 
 void* recvInput(void* vp){
+	
+	printTimeStampWithName(cp_str_recv, cp_str_start);
+	int server_sock, rc;
+	socklen_t len;
+	int i;
+	int bytes_rec = 0;
+	struct sockaddr_un server_sockaddr;
+	struct sockaddr_un client_sockaddr;
+	int cur_read;
+	int backlog = 10;
+	bool waiting_input_conn=false;
+	QueueElem* q;
+
+	memset(&server_sockaddr, 0, sizeof(struct sockaddr_un));
+	memset(&client_sockaddr, 0, sizeof(struct sockaddr_un));
+
+	std::stringstream sockname;
+	sockname<<"/tmp/gpusock_input_"<<g_devID<<"_"<<g_threadCap<<"_"<<g_dedup;
+
+	server_sock = socket(AF_UNIX, SOCK_STREAM, 0);
+	if (server_sock == -1){
+		printf("SOCKET ERROR: %s\n", strerror(errno));
+		exit(1);
+	}   
+	server_sockaddr.sun_family = AF_UNIX;
+	strcpy(server_sockaddr.sun_path, sockname.str().c_str());
+	len=sizeof(server_sockaddr);
+	setsockopt(server_sock, SOL_SOCKET,SO_REUSEADDR, NULL, 1);
+	unlink(sockname.str().c_str());
+	rc = bind(server_sock, (struct sockaddr *) &server_sockaddr, len);
+	if (rc == -1){
+		printf("BIND ERROR: %s\n", strerror(errno));
+		close(server_sock);
+		exit(1);
+	}
+
+	rc = listen(server_sock, backlog);
+	if (rc == -1){ 
+		printf("LISTEN ERROR: %s\n", strerror(errno));
+		close(server_sock);
+		exit(1);
+	}
+	printTimeStampWithName(server_sockaddr.sun_path, cp_str_listen);
+	g_readyFlag_input=true;
+	while (1){
+		waiting_input_conn=true;
+		int input_client_sock = accept(server_sock, (struct sockaddr *) &client_sockaddr, &len);
+		if (input_client_sock == -1){
+			printf("ACCEPT ERROR: %s\n", strerror(errno));
+			close(server_sock);
+			close(input_client_sock);
+			exit(1);
+		}
+		waiting_input_conn=false;
+		g_input_closed=false;
+		printTimeStampWithName( server_sockaddr.sun_path, cp_str_accepted);
+
+
+		while(1){
+			int ret;
+			int dimlen=0;
+			int buf=0;
+			int datalen=0;
+			if (ret=read(input_client_sock,&dimlen, sizeof(int)) <=0){
+
+				printf("client Disconnected  OR timed out\n");
+				//printTimeStamp("CLOSED INPUT SOCKET");
+				std::cout <<"CLOSED PROXY SOCKET AT: " << timeStamp() << std::endl;
+				break;
+			}
+			if(dimlen == CLOSE_SOCKET){
+				printf("received close socket from client \n");
+				break;
+			}
+			else if(dimlen == LOAD_MODEL){
+				int model_id;
+				int batch_size;
+				read(input_client_sock,&model_id, sizeof(int));
+				read(input_client_sock,&batch_size, sizeof(int));
+				printf("received load model %d from client \n", model_id);
+				q=new QueueElem();
+				q->e_act=LOAD;
+				q->job_ID=model_id;
+				q->batch_size=batch_size;
+				pushToQueue(q, g_ControlQueue, g_CqueueMtx, g_CqueueCV);
+				continue;
+			}
+			else if(dimlen ==UNLOAD_MODEL){
+				int model_id;
+				read(input_client_sock,&model_id, sizeof(int));
+				printf("received unload model %d from client \n", model_id);
+				q=new QueueElem();
+				q->e_act=UNLOAD;
+				q->job_ID=model_id;
+				pushToQueue(q, g_ControlQueue, g_CqueueMtx, g_CqueueCV);
+				continue;
+			}
+			else{
+				printf("received dimlen: %d \n", dimlen);
+			}
+			g_receivingFlag=true;
+			if(dimlen > 4){
+				printf("STRANGE dimlen: %d \n", dimlen);
+				printf("continuing execution! \n");
+				continue;
+			}
+			uint64_t start = getCurNs();
+
+			if(dimlen!=0){
+				q=new QueueElem();
+				q->e_act=RUN;
+				if (ret=read(input_client_sock, &buf, sizeof(int)) >0){
+					q->job_ID=buf;
+				}
+
+
+				for(int i =0; i <dimlen; i++){
+					if ((ret=read(input_client_sock,&buf,sizeof(int))) > 0){
+						q->dims.push_back(buf);
+					}
+				}
+				buf=0;
+				if (ret=read(input_client_sock, &buf, sizeof(int)) >0){
+					q->req_ID=buf;
+				}
+				buf=0;
+#ifdef PROFILE
+				q->p_reqProf=new ReqProfile(q->req_ID, q->job_ID);
+				q->p_reqProf->setInputStart(getCurNs());
+#endif
+
+				uint64_t start2 = getCurNs();           
+#ifndef NO_NET
+				ret=read(input_client_sock,&datalen,sizeof(int));
+				if(g_mappingIDtoInputDataType[q->job_ID] == "FP32"){
+					q->p_float32_indata=(float*)malloc(sizeof(float)*datalen);
+					if (ret=socket_receive(input_client_sock, (char*)q->p_float32_indata, datalen*sizeof(float), false) <=0){
+						printf("ERROR in receiving input data\n ");
+					}
+				}
+				else if(g_mappingIDtoInputDataType[q->job_ID] == "INT64"){
+					q->p_int64_indata=(int64_t*)malloc(sizeof(int64_t)*datalen);
+					if (ret=socket_receive(input_client_sock, (char*)q->p_int64_indata, datalen*sizeof(int64_t), false) <=0){
+						printf("ERROR in receiving input data\n ");
+					}
+				}
+#else
+#endif
+#ifdef PROXY_LOG
+				std::cout <<__func__ <<": " <<timeStamp() << " received input as following: " << std::endl;
+				printf("req_ID: %d, job_ID: %d \n", q->req_ID, q->job_ID);
+#endif 
+
+				uint64_t end2 = getCurNs();
+#ifdef PROXY_LOG
+				std::cout << __func__ <<": finished receiving input data" << std::endl; 
+#endif
+#ifdef PROFILE
+				q->p_reqProf->setInputEnd(getCurNs());
+#endif 
+				g_receivingFlag=false;
+				uint64_t end = getCurNs();
+
+				pushToQueue(q, g_InputQueue, g_IqueueMtx, g_IqueueCV);
+			}
+			else{
+				printf("read returned 0. stop reading \n");
+				break;
+			}
+		}// inner loop
+		socket_close(input_client_sock,true);
+		g_input_closed=true;
+		g_OqueueCV.notify_all();
+		g_IqueueCV.notify_all();
+		g_CqueueCV.notify_all();
+
+		if(g_exitFlag) break;
+
+	}//outer loop
+	std::cout << "exiting input thread" << std::endl;  
 
 }
 
