@@ -106,6 +106,38 @@ void freeMemory(QueueElem* q){
 	free(q);
 }
 torch::Tensor getRandInput(int id, int batch_size){
+  std::vector<int64_t> dimension;
+        dimension.push_back(batch_size); //push batchsize first
+        for(auto iter = g_inputDimMapping[id].begin(); iter != g_inputDimMapping[id].end(); iter++){
+                dimension.push_back(*iter);
+        }
+        torch::Tensor input;
+        torch::TensorOptions options;
+        if(g_mappingIDtoInputDataType[id] == "FP32"){
+                torch::TensorOptions options;
+                options = torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCUDA,0).requires_grad(false);
+        }
+        else if(g_mappingIDtoInputDataType[id] == "INT64"){
+                options = torch::TensorOptions().dtype(torch::kInt64).device(torch::kCUDA,0).requires_grad(false);
+        }
+        input=torch::ones(torch::IntList(dimension),options);
+	return input;
+
+}
+
+std::string getDirToFile(int model_id){
+        std::string filename;
+        for(auto pair : g_mappingFiletoID){
+                if(pair.second == model_id){
+                        filename = pair.first;
+                        break;
+                }
+        }
+        if(filename.empty()){
+                printf("File for ID %d NOT FOUND!! \n", model_id);
+                return "FILE_NOT_FOUND";
+        }
+        return g_commonDir + filename;
 }
 
 
