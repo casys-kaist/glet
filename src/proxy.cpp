@@ -111,7 +111,46 @@ torch::Tensor getRandInput(int id, int batch_size){
 
 void warmupModel(int id, int max_batch_size, torch::Device &gpu_dev)
 {
+	// Found out pytorch tends to use less memory when given a larger batch size for the first time
+#ifdef PROXY_LOG
+	std::cout << __func__ << ": called with max batch size: " << max_batch_size << std::endl;
+#endif 
 
+	int batch=max_batch_size;
+
+#ifdef PROXY_LOG
+	uint64_t start,end;
+	start=getCurNs();
+#endif 
+
+	torch::Tensor input = getRandInput(id, batch);
+#ifdef PROXY_LOG
+	std::cout << __func__ << ": type of random tensor: " << input.dtype() 
+		<< std::endl;
+	std::cout << __func__ << ": size of tensor: " << input.sizes()
+		<< std::endl;
+	std::cout << __func__ << ": device of tensor(before): " << input.device()
+		<< std::endl;
+#
+#endif 
+	input=input.to(gpu_dev);
+
+	std::vector<torch::IValue> inputs;
+	inputs.push_back(input);
+#ifdef PROXY_LOG
+	std::cout << __func__ << ": device of tensor(after): " << input.device()
+		<< std::endl;
+#endif
+
+	g_modelTable[id]->forward(inputs);
+	cudaDeviceSynchronize();
+
+
+#ifdef PROXY_LOG
+	end=getCurNs();
+	printf("[warmupModel] latency: %lf ms \n", double(end-start)/1000000);
+#endif
+	inputs.clear();
 }
 
 po::variables_map parseOpts(int ac, char** av) {
