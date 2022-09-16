@@ -178,6 +178,23 @@ po::variables_map parseOpts(int ac, char** av) {
 }
 
 void initPyTorch(){
+	std::cout << __func__ << ": called"<<std::endl;
+
+	uint64_t total_end, total_start;
+	total_start = getCurNs();
+
+	std::vector<torch::jit::IValue> inputs;
+
+	std::vector<int64_t> sizes={1};
+	torch::TensorOptions options;
+	options = torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCUDA,0).requires_grad(false);
+
+	torch::Tensor dummy1 = at::empty(sizes,options);
+
+	cudaDeviceSynchronize();
+	total_end = getCurNs();
+	std::cout << double(total_end - total_start)/1000000 << " PyTorchInit total ms "<<std::endl;
+	return;
 }
 
 void unloadModel(int id){
