@@ -181,11 +181,76 @@ void initPyTorch(){
 }
 
 void unloadModel(int id){
+	#ifdef PROXY_LOG
+	printf("[unloadModel] called for partition [%d,%d,%d] \n", g_devID, g_threadCap, g_dedup);
+#endif 
+	std::vector<int>::iterator fiter = find(g_loadedModelIDs.begin(), g_loadedModelIDs.end(),id);
+	if(fiter == g_loadedModelIDs.end()){
+		printf("model id : %d is NOT LOADED in memory. Skipping! \n", id);
+		return;
+	}
+
+#ifdef PROXY_LOG
+	printf("[unloadModel](%s) unloading jobid :%d \n", timeStamp(), id);
+	uint64_t start,end;
+	start=getCurNs();
+#endif 
+
+	g_modelTable[id].reset();
+
+	c10::cuda::CUDACachingAllocator::emptyCache();
+
+	cudaDeviceSynchronize();
+	g_loadedModelIDs.erase(fiter);
+#ifdef PROXY_LOG
+	end=getCurNs();
+	printf("[unloadModel] latency: %lf ms \n" ,double(end-start)/1000000);
+#endif
 }
 
 // you can use this after you called unload too, just like "reload"
 void loadModel(QueueElem*  q, torch::Device gpu_dev,bool warmup=false){ 
+int id = q->job_ID;
+	int max_batch_size=q->batch_size;
+	std::vector<int>::iterator fiter = find(g_loadedModelIDs.begin(), g_loadedModelIDs.end(),id);
+	if(fiter != g_loadedModelIDs.end()){
+		printf("model id : %d already loaded! skipping loading \n", id);
+		return;
+	}
+	std::string temp_str = getDirToFile(id).c_str();
 
+	const char* dir_to_file = temp_str.c_str();
+#ifdef PROXY_LOG
+	printf("[loadModel](%s) loading jobid :%d \n",timeStamp(), id);
+	uint64_t start,end;
+	start=getCurNs();
+	uint64_t p1,p2,p3;
+#endif 
+	g_modelTable[id] = std::make_shared<torch::jit::script::Module>(torch::jit::load(dir_to_file));
+#ifdef PROXY_LOG
+	p1 = getCurNs();
+#endif 
+	g_modelTable[id]->to(gpu_dev);
+	g_modelTable[id]->eval();
+	cudaDeviceSynchronize();
+	std::cout << "finished loadiing" << std::endl;
+#ifdef PROXY_LOG
+	p2 = getCurNs();
+#endif 
+	if(warmup){
+		warmupModel(id, max_batch_size, gpu_dev);
+	}
+	g_loadedModelIDs.push_back(id);
+
+#ifdef PROXY_LOG
+	end=getCurNs();
+	std::cout <<"[loadModel] latency: " << double(end-start)/1000000 << std::endl;
+	std::cout <<"[loadModel] jit::load  latency : " << double(p1-start)/1000000 << std::endl;
+	std::cout <<"[loadModel] load_to_gpu latency : " << double(p2-p1)/1000000 << std::endl;
+	std::cout <<"[loadModel] warmup latency : " << double(end-p2)/1000000 << std::endl;
+#endif 
+
+	return;
 }
 
 
