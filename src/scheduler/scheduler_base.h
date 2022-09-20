@@ -138,7 +138,21 @@ class BaseScheduler {
 		bool _useRepartition = true;
 		std::vector<int> _availParts = {100};
 
-			
+		// TODO: let a function  and recieve inputs as parameters/file
+		// for now we hard code
+		std::map<int, float> _batch_latency_1_28_28;
+		std::map<int, float> _batch_latency_3_224_224;
+		std::map<int, float> _batch_latency_3_300_300;
+		std::map<int, int> _mapModelIDtoMemSize;
+		std::map<std::string, DevPerfModel> _nametoDevPerfModelTable;
+		std::map<std::string, int> _typeToNumofTypeTable;
+
+
+		std::vector<std::string> _IDtoModelName = {"lenet1", "lenet2", "lenet3",
+											"lenet4", "lenet5", "lenet6", "googlenet",
+											"resnet50", "ssd-mobilenetv1", "vgg16",
+											"mnasnet1_0", "mobilenet_v2", "densenet161", "bert"};
+		
 	};
 } //Scheduling
 
