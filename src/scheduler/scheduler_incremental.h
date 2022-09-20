@@ -44,7 +44,14 @@ namespace Scheduling{
 			void getEstimateTrpST(std::string device, const Task &task, int rate, std::vector<NodePtr> &output_vec, const int MAX_PART);
 			int getMaxReturnPartST(const Task &task, const int rate);
 
-					
+			//added 2022-06-07, functions for trying out heterogeneous schedulers
+			void getMinPartSum(Task &task, std::string &output, const int MAX_PART);
+			void getOneFirst(Task &task, std::string &output, const int MAX_PART);
+			bool checkTypePriority(std::string &eoutput_type);
+			int getNodewithPriorityType(Task &task, std::string type, NodePtr &output_node_ptr, std::vector<NodePtr> given_vector);
+			bool _priorityCheck=false;
+			std::string _priorityType;
+			
 			std::map<int, std::vector<SatTrpEntry>*> _perModelSatTable;
 			// the amount of memory whenever a new gpu-let needs to be added
 			const int _DEFAULT_PYTORCH_MEM_USAGE = 1230; 	
