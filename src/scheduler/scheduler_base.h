@@ -61,5 +61,14 @@ typedef struct _SimState
   int next_dummy_id;
 } SimState;
 
+typedef struct _SatTrpEntry
+{
+	int part;
+	int max_batch;
+	float sat_trp;
+	std::string type;
+} SatTrpEntry;
+
+
 #else
 #endif
