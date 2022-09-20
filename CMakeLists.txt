@@ -89,3 +89,12 @@ add_executable(proxy src/proxy.cpp
 target_link_libraries(proxy "${TORCH_LIBRARIES}" ${OpenCV_LIBS} boost_program_options  boost_system nvidia-ml)
 set_property(TARGET proxy PROPERTY CXX_STANDARD 14)
 
+#---------standalone_scheduler---------
+add_executable(standalone_scheduler src/standalone_scheduler.cpp
+                ${SCHEDULER_SRCS}
+                src/common/scheduler_utils.cpp
+                src/common/jsoncpp.cpp
+                src/common/config.cpp
+                )
+target_link_libraries(standalone_scheduler boost_program_options  boost_system)
+set_property(TARGET standalone_scheduler PROPERTY CXX_STANDARD 14)
