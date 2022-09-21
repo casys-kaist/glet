@@ -283,6 +283,25 @@ namespace Scheduling{
 
     }
 
+	 void BaseScheduler::setupAvailParts(std::vector<int> input_parts){
+                assert(input_parts.size() >=1);
+                _availParts.clear();
+
+                for(auto part : input_parts){
+                        if(part !=0) _availParts.push_back(part);
+                        int counter_part = 100-part;
+                        if(counter_part !=0){
+                                std::vector<int>::iterator it = find(_availParts.begin(), _availParts.end(),counter_part);
+                                if(it == _availParts.end()){
+                                        _availParts.push_back(counter_part);
+                                }
+                        }
+                }
+                // sort in descneding order
+                sort(_availParts.begin(),_availParts.end(),std::greater<int>());
+        }
+
+
 
 
 	void BaseScheduler::initiateDevs(SimState &input, int nDevs){
