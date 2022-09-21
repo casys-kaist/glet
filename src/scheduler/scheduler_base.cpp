@@ -526,6 +526,18 @@ void BaseScheduler::fillReservedNodes(SimState &input){
 		}    
 	}
 
+	NodePtr BaseScheduler::makeEmptyNode(int gpu_id, int resource_pntg, std::string type){
+		Node NewNode;
+		NodePtr NewNodePtr = std::make_shared<Node>(NewNode);
+		NewNodePtr->id=gpu_id;
+		NewNodePtr->resource_pntg = resource_pntg;
+		NewNodePtr->reserved=false;
+		NewNodePtr->dedup_num=0;
+		NewNodePtr->occupancy=0;
+		NewNodePtr->type=type;
+		return NewNodePtr;
+	}
+
 
 
 } // Scheduling
