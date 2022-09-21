@@ -267,6 +267,61 @@ namespace Scheduling{
 		}
 	}
 
+	
+	float BaseScheduler::getInterference(std::string device, int a_id, int b_id, int a_batch, int b_batch,int partition_a, int partitoin_b){
+		assert(!device.empty());
+		std::string model_a= _IDtoModelName[a_id];
+		std::string model_b = _IDtoModelName[b_id];
+		float retAlpha=_nametoDevPerfModelTable[device].getInterference(model_a,a_batch,partition_a, model_b,b_batch,partitoin_b);
+		return retAlpha > 1 ? retAlpha : 1.0;
+	}
+
+	float BaseScheduler::getInterference(std::string device, const int model_id,const int batch_size,const NodePtr node_ptr,const GPUPtr gpu_ptr){
+		assert(!device.empty());
+		float max_interference =1.0;
+		for (auto node: gpu_ptr->vNodeList){
+			if(isSameNode(node,node_ptr)) continue;
+			for(auto task : node->vTaskList){
+				float interference = getInterference(device, model_id,task->id,batch_size,task->batch_size,node_ptr->resource_pntg,node->resource_pntg);
+				if (max_interference < interference) max_interference = interference;
+			}
+		}
+		return max_interference;
+	}
+
+	//more simple version of getting latency without considering interference
+	float BaseScheduler::getLatency(std::string device, int model_num, int batch, int part){
+		assert(!device.empty());
+		assert(1<= batch && batch <= _MAX_BATCH);
+		float latency = _nametoDevPerfModelTable[device].getLatency(_IDtoModelName[model_num], batch, part);
+		if(_useBatchingOverhead) latency += getBatchLatency(_IDtoModelName[model_num],batch);
+		float lat_ratio=_latencyRatio;
+		return latency* lat_ratio;
+	}
+
+	float BaseScheduler::getLatency(std::string device, const int model_num, const int batch, const NodePtr self_node, SimState &input){
+		assert(!device.empty());
+		assert(batch>=1);
+		float pure_latency = _nametoDevPerfModelTable[device].getLatency(_IDtoModelName[model_num], batch, self_node->resource_pntg);
+		float interference_overhead=0.0;
+		float batch_overhead=0.0; // added to accomodate batching overhead (caused by PyTorch cat function)
+		if(_useBatchingOverhead){
+			batch_overhead = getBatchLatency(_IDtoModelName[model_num],batch);
+		}
+
+		if(_useInterference){
+			// do not try to get interference of non-existent GPU
+			if (input.vGPUList.size() > self_node->id){ 
+				GPUPtr self_gpu= input.vGPUList[self_node->id];
+				double int_overhead=getInterference(device,model_num,batch,self_node,self_gpu);
+				interference_overhead=pure_latency*(int_overhead-1.0);
+				//interference_overhead = (interference_overhead > batch_overhead) ? interference_overhead - batch_overhead : 0.0;
+			}
+		}
+		float lat_ratio=_latencyRatio; 
+		return (pure_latency + batch_overhead + interference_overhead) * lat_ratio;
+	}
+
 
 
 
