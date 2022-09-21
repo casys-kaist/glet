@@ -538,6 +538,116 @@ void BaseScheduler::fillReservedNodes(SimState &input){
 		return NewNodePtr;
 	}
 
+	
+	int BaseScheduler::getMaxBatch(Task &self_task, const NodePtr &self_node, SimState &input, int &req, const bool is_residue, bool interference){
+#ifdef SCHED_DEBUG
+		printNodeInfo(self_node);
+#endif
+		int ret_batch=0;
+		int prev_batch=0;
+		int mid_batch = 1 + (_MAX_BATCH)/2;
+		int starting_point, under_limit;
+		float latency;
+		int model_num=self_task.id;
+		int SLO = self_task.SLO;
+#ifdef SCHED_DEBUG
+		std::cout << __func__ << ": called for task id: " << model_num << "and SLO:  " << SLO << std::endl; 
+		if(is_residue){
+			std::cout << __func__ << ": for residue rate : " << req << std::endl; 
+		}
+		else{
+			std::cout << __func__ << ": for saturated rate " << std::endl; 
+
+		}
+#endif
+		int low_batch=1;
+		int high_batch=_MAX_BATCH;
+		bool check_and_exit=false;
+		bool check_last=false;
+		while(!check_and_exit){
+			// check condition 
+			if(low_batch == 1 && high_batch ==1){
+				check_last=true;
+			}
+			int mid_batch = floor((high_batch + low_batch)/2);
+			if(interference)
+				latency = getLatency(self_node->type,model_num,mid_batch,self_node, input);
+			else
+				latency = getLatency(self_node->type,model_num,mid_batch,self_node->resource_pntg);
+			if(is_residue){
+				if(latency + 1000*float(mid_batch)/req <= SLO) {
+					low_batch=mid_batch;
+				}
+				else {
+					if(check_last){
+						ret_batch=0;
+						break;
+					}
+					high_batch=mid_batch;
+				}
+			}
+			else{
+				if(2*latency<= SLO){
+					low_batch=mid_batch;
+				}
+				else{
+					if(check_last){
+						ret_batch=0;
+						break;
+					}
+					high_batch=mid_batch;
+				}
+			}
+			if(high_batch-low_batch<=1) high_batch=low_batch;
+			if(high_batch == low_batch){
+				if(low_batch!=1){
+					ret_batch=low_batch;
+					check_and_exit=true;
+				}
+				else{
+					if(check_last){
+						ret_batch=low_batch;
+						check_and_exit=true;
+					}
+				}
+			}
+		}
+#ifdef SCHED_DEBUG
+		std::cout << "[getMaxBatch] original ret_batch is " << ret_batch << std::endl;
+#endif
+		// corner checking small request rates
+		if(ret_batch == 0 && is_residue){
+#ifdef SCHED_DEBUG
+			printf("[getMaxBatch] model %s: need special care on resource partitoin: %d \n", _IDtoModelName[model_num].c_str(), self_node->resource_pntg);
+#endif
+
+			bool succeed=false;
+			float b1_latency = getLatency(self_node->type,self_task.id,1,self_node,input);
+			if(b1_latency < 1000.0 * 1/ req  && b1_latency < SLO){
+				req = 1 * (1000 / (self_task.SLO - b1_latency))*_latencyRatio;
+				//req = 1 * (1000 / (b1_latency))*_latencyRatio;
+				ret_batch=1;
+				succeed=true;
+#ifdef SCHED_DEBUG
+				printf("[getMaxBatch] model %s: changed request rate to %d req/s,  with resource partition: %d\n", _IDtoModelName[model_num].c_str(),req, self_node->resource_pntg);
+#endif
+
+			}
+			if(!succeed){
+#ifdef SCHED_DEBUG
+				printf("[getMaxBatch] model %s: not possible to satisfy SLO %d ms, request rate: %d req/s,  with resource partition: %d\n", _IDtoModelName[model_num].c_str(),SLO,req, self_node->resource_pntg);
+#endif
+				return 0;
+			}
+		}
+#ifdef SCHED_DEBUG
+		std::cout << __func__ << ": returning max_batch: " << ret_batch << std::endl; 
+
+#endif
+		return ret_batch;
+	}
+
+
 
 
 } // Scheduling
