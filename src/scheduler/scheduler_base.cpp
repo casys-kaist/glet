@@ -674,6 +674,81 @@ void BaseScheduler::fillReservedNodes(SimState &input){
 		return ret_latency;
 
 	}
+	bool BaseScheduler::adjustSatNode(NodePtr &node_ptr, SimState &simulator, Task &task_to_update){
+#ifdef SCHED_DEBUG
+		printf("[ajustSatNode] called for [%d,%d,%d] \n", node_ptr->id, node_ptr->resource_pntg, node_ptr->dedup_num);
+#endif 
+		assert(node_ptr->occupancy >=1 && node_ptr->vTaskList.size() == 1);
+		bool good_to_go = true;
+		// Saturate Node have only one task 
+		TaskPtr task_ptr=node_ptr->vTaskList[0];
+		float latency = getLatency(node_ptr->type,task_ptr->id,task_ptr->batch_size,node_ptr,simulator);
+#ifdef SCHED_DEBUG
+		printf("[ajustSatNode]  task: %d, latency: %lf SLO: %d \n", task_ptr->id, latency, task_ptr->SLO);
+
+#endif
+
+		if(2*latency < task_ptr->SLO){
+			float org_througput  = task_ptr->throughput;
+			task_ptr->throughput=(task_ptr->batch_size * 1000.0 )/ latency;
+#ifdef SCHED_DEBUG
+			std::cout << "task_to_update.additional_rate (before): " << task_to_update.additional_rate << std::endl;
+#endif
+			task_to_update.additional_rate+=(int(org_througput - task_ptr->throughput) > 0 )  ? int(org_througput - task_ptr->throughput) : 0;
+#ifdef SCHED_DEBUG
+			std::cout << "task_to_update.additional_rate (after): " << task_to_update.additional_rate << std::endl;
+#endif
+		}   
+		else good_to_go=false;
+		if(good_to_go) return EXIT_SUCCESS;
+#ifdef SCHED_DEBUG
+		printf("[ajustSatNode] [%d,%d,%d] needs to be adjusted \n", node_ptr->id, node_ptr->resource_pntg, node_ptr->dedup_num);
+#endif 
+		float min_duty_cycle=0.0;
+		int min_batch=0;
+		int org_batch_size = task_ptr->batch_size;
+		int new_batch_size = task_ptr->batch_size;
+		float new_duty_cycle=node_ptr->duty_cycle;
+		float original_l_dc = 2*getLatency(node_ptr->type,task_ptr->id,new_batch_size,node_ptr->resource_pntg);
+		while(task_ptr->SLO <  2*latency){
+			new_batch_size--;
+			if(new_batch_size ==0) return EXIT_FAILURE;
+			latency = getLatency(node_ptr->type,task_ptr->id,new_batch_size,node_ptr,simulator);  
+			new_duty_cycle = latency;
+		} 
+		min_duty_cycle = new_duty_cycle;
+		min_batch=new_batch_size;
+		assert(min_duty_cycle != 0.0);
+		assert(min_batch !=0);
+
+		// update node
+#ifdef SCHED_DEBUG
+		printf("[ajustSatNode] new_batch_size: %d ,new_duty_cycle: %lf ms \n", min_batch, min_duty_cycle);
+#endif 
+
+		task_ptr = node_ptr->vTaskList[0];
+		task_ptr->batch_size=min_batch;
+		node_ptr->duty_cycle=min_duty_cycle; // in order to give more oppurtunities to node, we chose minimum
+		float org_throughput=task_ptr->throughput;
+		float new_throughput=task_ptr->batch_size * (1000.0 /node_ptr->duty_cycle); 
+		task_ptr->throughput=new_throughput;
+#ifdef SCHED_DEBUG
+		std::cout << "task_to_update.additional_rate (before): " << task_to_update.additional_rate  << std::endl;
+#endif
+		task_to_update.additional_rate +=(org_throughput > new_throughput) ? int(org_throughput-new_throughput) : 0;
+#ifdef SCHED_DEBUG
+		std::cout << "task_to_update.additional_rate (after): " <<  task_to_update.additional_rate  << std::endl;
+#endif
+#ifdef SCHED_DEBUG
+		printf("[ajustSatNode] org_throughput: %lf ,new_throughput: %lf ms \n",org_throughput,new_throughput );
+#endif   
+		return EXIT_SUCCESS;
+	} //adjustSATNode
+
+	bool BaseScheduler::adjustSatNode(NodePtr &node_ptr, SimState &simulator){
+		return adjustSatNode(node_ptr,simulator,*node_ptr->vTaskList[0]);
+	} //adjustSATNode
+
 
 
 
