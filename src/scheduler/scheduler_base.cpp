@@ -356,5 +356,74 @@ namespace Scheduling{
 		return false;
 	}
 
+	bool BaseScheduler::postAdjustInterference(SimState &input){
+		for(auto gpu_ptr : input.vGPUList){
+			for(auto node_ptr : gpu_ptr->vNodeList){
+				if(adjustResNode(node_ptr,input)) return EXIT_FAILURE;
+			}
+		}
+		return EXIT_SUCCESS;
+	}
+	bool BaseScheduler::adjustResNode(NodePtr &node_ptr, SimState &simulator){
+#ifdef SCHED_DEBUG
+		printf("[adjustResNode] called for [%d,%d,%d] \n", node_ptr->id, node_ptr->resource_pntg, node_ptr->dedup_num);
+#endif 
+		float latency_sum =0;
+		bool good_to_go = true;
+		for(auto task_ptr : node_ptr->vTaskList){
+			latency_sum+=getLatency(node_ptr->type,task_ptr->id,task_ptr->batch_size,node_ptr, simulator);
+		}
+		for(auto task_ptr : node_ptr->vTaskList){ // considering how fast residue nodes can serve, we allow some slack
+			if(latency_sum + node_ptr->duty_cycle > task_ptr->SLO * 1.05) good_to_go=false;
+		}
+		if(good_to_go) return EXIT_SUCCESS;
+#ifdef SCHED_DEBUG
+		printf("[adjustResNode] [%d,%d,%d] needs to be adjusted \n", node_ptr->id, node_ptr->resource_pntg, node_ptr->dedup_num);
+#endif 
+		std::vector<float> min_duty_cycles;
+		std::vector<int> new_batches;
+
+		for(auto task_ptr : node_ptr->vTaskList){
+			int new_batch_size = task_ptr->batch_size;
+			float new_duty_cycle=node_ptr->duty_cycle;
+			float latency = getLatency(node_ptr->type,task_ptr->id,new_batch_size,node_ptr,simulator);
+			float other_latency = latency_sum - latency;
+#ifdef SCHED_DEBUG
+			printf("other_latency: %lf, latency: %lf ms, new_duty_cycle: %lf ms \n", other_latency, latency, new_duty_cycle);
+#endif 
+
+
+			while(task_ptr->SLO < other_latency + latency + new_duty_cycle){
+				new_batch_size--;
+				if(new_batch_size ==0) return EXIT_FAILURE;
+				latency = getLatency(node_ptr->type,task_ptr->id,new_batch_size,node_ptr, simulator);  
+				new_duty_cycle = new_duty_cycle * (float(new_batch_size) / task_ptr->batch_size);
+#ifdef SCHED_DEBUG
+				printf("latency: %lf ms, new_batch_size: %d ,new_duty_cycle: %lf ms \n", latency, new_batch_size, new_duty_cycle);
+#endif 
+
+			}
+			min_duty_cycles.push_back(new_duty_cycle);
+			new_batches.push_back(new_batch_size);
+		}
+		// chose minimum among duty
+		assert(min_duty_cycles.size() >= 1);
+		sort(min_duty_cycles.begin(), min_duty_cycles.end());
+		float min_duty_cycle = min_duty_cycles[0];
+		int id=0;
+		latency_sum=0;
+		for(auto task_ptr : node_ptr->vTaskList){
+			task_ptr->batch_size = new_batches[id];
+			task_ptr->throughput= (1000 * task_ptr->batch_size) / min_duty_cycle;
+
+			latency_sum += getLatency(node_ptr->type,task_ptr->id,task_ptr->batch_size,node_ptr,simulator);
+			id++;
+		}
+		node_ptr->duty_cycle=min_duty_cycle;
+		node_ptr->occupancy = latency_sum / min_duty_cycle;
+		return EXIT_SUCCESS;
+	}
+
+
 
 } // Scheduling
