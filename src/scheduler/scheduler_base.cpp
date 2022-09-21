@@ -749,6 +749,28 @@ void BaseScheduler::fillReservedNodes(SimState &input){
 		return adjustSatNode(node_ptr,simulator,*node_ptr->vTaskList[0]);
 	} //adjustSATNode
 
+	//returns whether NodePtr a and b are (conceptually) pointing to the same node
+	bool BaseScheduler::isSameNode(NodePtr a, NodePtr b){
+		return (a->id == b->id) && (a->resource_pntg == b->resource_pntg) && (a->dedup_num == b->dedup_num);
+	}
+
+	// assuming there are only two nodes per GPU, get the other node
+	bool BaseScheduler::getOtherNode(NodePtr the_node, NodePtr &output_the_other_node, SimState &sim){
+		for(auto gpu_ptr : sim.vGPUList)
+		{
+			if(gpu_ptr->GPUID == the_node->id){
+				for(auto node_ptr: gpu_ptr->vNodeList){
+					if(!isSameNode(the_node,node_ptr)){
+						output_the_other_node=node_ptr;
+						return EXIT_SUCCESS;
+					}
+
+				}
+			}
+
+		}
+		return EXIT_FAILURE;
+	}
 
 
 
