@@ -798,6 +798,49 @@ void BaseScheduler::fillReservedNodes(SimState &input){
 		return t1; 
 	}
 
+	// reset input according to node sizes vector
+	// only use id, resource_pntg of nodes for this function
+	void BaseScheduler::resetScheduler(SimState &input, std::vector<Node> node_sizes){
+		std::vector<int> curr_gpu_node_idxs;
+		for(auto type_num_pair : _typeToNumofTypeTable){
+			int nGPU = type_num_pair.second;
+			std::string type = type_num_pair.first;
+			int idx=0;
+			for(int j =0; j <nGPU ; j++){
+				GPU new_gpu;
+				GPUPtr new_gpu_ptr=std::make_shared<GPU>(new_gpu);
+				new_gpu_ptr->GPUID=idx;
+				new_gpu_ptr->TYPE = type;
+				std::vector<Node> temp_nodes;
+				for(auto node : node_sizes){
+					if ((node.id-1) == idx){
+						temp_nodes.push_back(node);
+					}
+				}
+				for(auto the_node : temp_nodes){
+					NodePtr new_node_ptr=makeEmptyNode(the_node.id-1,the_node.resource_pntg,type);
+					new_node_ptr->dedup_num=the_node.dedup_num;
+					new_gpu_ptr->vNodeList.push_back(new_node_ptr);
+				}
+
+				input.vGPUList.push_back(new_gpu_ptr);
+				idx++;
+			}
+		}
+#ifdef SCHED_DEBUG
+	printResults(input);
+#endif
+		return;
+	}
+
+	void BaseScheduler::printNodeInfo(const NodePtr &node)
+	{
+		std::cout 
+			<< "GPUID: " << node->id <<", "
+			<< "type: " << node->type << std::endl;
+	}
+
+
 
 
 } // Scheduling
