@@ -201,6 +201,48 @@ namespace Scheduling{
 
 		}
 	}
+
+	bool BaseScheduler::getUseParts(){
+		return _usePart;
+	}
+
+	std::vector<int> BaseScheduler::getAvailParts(){
+		return _availParts;
+	}
+
+	int BaseScheduler::getMaxGPUs(){
+		int sum=0;
+		for(auto type_num_pair : _typeToNumofTypeTable){
+			sum += type_num_pair.second;
+		}
+		return sum; 
+	}
+
+	int BaseScheduler::setMaxGPUs(int num_gpu){
+
+		_numMaxGPU=num_gpu;
+	}
+
+	int BaseScheduler::getMaxBatchSize(){
+		return _MAX_BATCH;
+	}
+
+	std::string BaseScheduler::getModelName(int id){
+		return this->_IDtoModelName[id];
+	}
+
+	int BaseScheduler::getModelID(std::string model_name){
+		int id=-1;
+		for( auto name : this->_IDtoModelName){
+			id++;
+			if(name == model_name){
+				break;
+			}
+		}
+		assert(id != -1);
+		return id;
+	}
+
 	void BaseScheduler::initiateDevs(SimState &input, int nDevs){
 #ifdef SCALE_DEBUG
 		std::cout << __func__ << " initiating " << nDevs << " GPUs for simulator" << std::endl;
