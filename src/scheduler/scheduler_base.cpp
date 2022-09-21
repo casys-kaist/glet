@@ -424,6 +424,66 @@ namespace Scheduling{
 		return EXIT_SUCCESS;
 	}
 
+void BaseScheduler::fillReservedNodes(SimState &input){
+		// check how partitioned each GPU are
+		for(auto gpu_ptr : input.vGPUList){
+			int assigned_part =0;
+			int part_num=0;
+			for (auto it : gpu_ptr->vNodeList){
+				if(!it->vTaskList.empty())
+					assigned_part += it->resource_pntg;
+				part_num++;
+			}
+#ifdef SCHED_DEBUG
+			printf("[fillReserve] device id: %d, allocated_size: %d \n", gpu_ptr->GPUID , assigned_part);
+#endif
+
+			if(assigned_part==0){  // if that GPU was not used at all
+				if(_usePart){
+					Node new_node;
+					std::shared_ptr<Node> new_node_ptr = std::make_shared<Node>(new_node);
+					new_node_ptr->resource_pntg=50;
+					new_node_ptr->reserved=true;
+					new_node_ptr->id = gpu_ptr->GPUID;
+					new_node_ptr->dedup_num=0;
+					new_node_ptr->duty_cycle=0;
+					gpu_ptr->vNodeList.push_back(new_node_ptr);
+					Node new_node2;
+					std::shared_ptr<Node> new_node_ptr2 = std::make_shared<Node>(new_node2);
+					new_node_ptr2->resource_pntg=50;
+					new_node_ptr2->reserved=true;
+					new_node_ptr2->id = gpu_ptr->GPUID;
+					new_node_ptr2->dedup_num=1;
+					new_node_ptr2->duty_cycle=0;
+					gpu_ptr->vNodeList.push_back(new_node_ptr2);
+
+				}
+				else{
+					Node new_node;
+					std::shared_ptr<Node> new_node_ptr = std::make_shared<Node>(new_node);
+					new_node_ptr->resource_pntg=100;
+					new_node_ptr->reserved=true;
+					new_node_ptr->id = gpu_ptr->GPUID;
+					new_node_ptr->dedup_num=0;
+					new_node_ptr->duty_cycle=0;
+					gpu_ptr->vNodeList.push_back(new_node_ptr);
+
+				}
+			}
+			else if(0< assigned_part  && assigned_part < 100 && part_num < 2){ // if there is only one partition that is allocated
+				Node new_node;
+				std::shared_ptr<Node> new_node_ptr = std::make_shared<Node>(new_node);
+				new_node_ptr->resource_pntg=100-assigned_part;
+				if (new_node_ptr->resource_pntg ==50 ) new_node.dedup_num=1;
+				else new_node_ptr->dedup_num =0;
+				new_node_ptr->id = gpu_ptr->GPUID;
+				new_node_ptr->reserved=true;
+				new_node_ptr->duty_cycle=0;
+				gpu_ptr->vNodeList.push_back(new_node_ptr);
+			} 
+		}    
+	}
+
 
 
 } // Scheduling
