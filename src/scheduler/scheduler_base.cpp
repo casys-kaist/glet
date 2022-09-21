@@ -772,6 +772,31 @@ void BaseScheduler::fillReservedNodes(SimState &input){
 		return EXIT_FAILURE;
 	}
 
+		int BaseScheduler::return99P(const int mean){
+		//added for fast returning values that might take too long
+		// based on calculation value of 550: 10.02%
+		std::cout << "received: " << mean << std::endl;
+		if(mean > 550) return mean*1.1;
+		double prob_sum=0.0;
+		int new_mean=1;
+		do{ 
+			double prob=calcPoissProb(new_mean,mean);
+			prob_sum+=prob;
+			new_mean++;
+		}while(prob_sum < 0.99 );
+		std::cout << "returning new_mean: "<< new_mean << std::endl; 
+		return new_mean;
+	}
+
+	double BaseScheduler::calcPoissProb(int actual, int mean){
+		double t1 = exp(-mean);
+		for(int i =0; i< actual; i++){
+			t1 *=double(mean);
+			t1 /=(i+1);  //check how much leftover requests were  
+
+		}   
+		return t1; 
+	}
 
 
 
