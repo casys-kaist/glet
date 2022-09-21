@@ -243,6 +243,48 @@ namespace Scheduling{
 		return id;
 	}
 
+ void BaseScheduler::setupTasks(std::string task_csv_file, std::vector<Task> *task_list){
+                std::string str_buf;
+                std::fstream fs;
+                fs.open(task_csv_file, std::ios::in);
+
+                getline(fs, str_buf);
+                int num_of_task = stoi(str_buf);
+                for(int j=0;j<num_of_task;j++)
+                {
+                        Task new_task;
+
+                        getline(fs,str_buf,',');
+                        new_task.id=stoi(str_buf);
+
+                        getline(fs,str_buf,',');
+                        new_task.request_rate=stoi(str_buf);
+#ifdef ADD_RATE
+                        new_task.request_rate = return99P(new_task.request_rate);
+#endif
+
+                        getline(fs,str_buf,',');
+                        new_task.SLO=stoi(str_buf);
+
+                        task_list->push_back(new_task);
+                }
+                fs.close();
+#ifdef SCHED_DEBUG
+                std::cout << "init_setup ------------------------------------------------" << std::endl;
+                std::cout << "task (name : [req, SLO])" << std::endl;
+                for(std::vector<Task>::iterator iter=task_list->begin(); iter != task_list->end(); ++iter)
+                {
+                        std::cout << iter->id << " : [" << iter->request_rate << ", " << iter->SLO << "]" << std::endl;
+                        iter->SLO= iter->SLO;
+                        std::cout << iter->id << "configured SLO: "<< iter->SLO <<std::endl;
+                }
+                std::cout << std::endl;
+#endif
+
+    }
+
+
+
 	void BaseScheduler::initiateDevs(SimState &input, int nDevs){
 #ifdef SCALE_DEBUG
 		std::cout << __func__ << " initiating " << nDevs << " GPUs for simulator" << std::endl;
