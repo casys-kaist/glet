@@ -647,6 +647,34 @@ void BaseScheduler::fillReservedNodes(SimState &input){
 		return ret_batch;
 	}
 
+	float BaseScheduler::getBatchLatency(std::string modelname, int batch){
+		assert(batch>=1);
+		float ret_latency=0;
+
+		// I know this looks ugly and wierd. Batching latency is long in a arbitrary manner, so a constant is multiple to the average value
+		// so that the scheduler can make conservative decisions. If this problem is fixed, this will not be required any more.
+		if(modelname == "lenet1" || modelname == "lenet2" || modelname == "lenet3" || modelname == "lenet4" || modelname == "lenet5" || modelname == "lenet6"){
+			ret_latency=0.4;
+		}
+		else if(modelname == "resnet50" || modelname == "googlenet" || modelname == "vgg16" || modelname == "mnasnet1_0" || modelname == "mobilenet_v2" || modelname=="densenet161"){
+			ret_latency = 1.9* _batch_latency_3_224_224[batch]; 
+		}
+		else if(modelname == "ssd-mobilenetv1"){
+			ret_latency = 2.5*_batch_latency_3_300_300[batch]; 
+		}
+		else if(modelname == "bert"){
+			ret_latency=1;
+		}
+		else{
+			std::cout<<"unrecognized model: "<< modelname<<", check your code! "<< std::endl;   
+			exit(1);
+		}
+
+		assert(ret_latency !=0);
+		return ret_latency;
+
+	}
+
 
 
 
