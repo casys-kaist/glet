@@ -322,7 +322,39 @@ namespace Scheduling{
 		return (pure_latency + batch_overhead + interference_overhead) * lat_ratio;
 	}
 
+	bool BaseScheduler::isModelLoaded(GPUPtr gpu_ptr, NodePtr node_ptr, int model_id){
+		// if part is not loaded, model is not loaded
+#ifdef SCHED_DEBUG
+		std::cout << __func__ << ": checking model " << model_id << " is loaded for gpu "
+			<<"[" << gpu_ptr->GPUID << "," << node_ptr->dedup_num << "]"
+			<<std::endl;
+#endif
+		if(!isPartLoaded(gpu_ptr, node_ptr)) return false;
 
+		bool found=false;
+		for(auto _node_ptr : gpu_ptr->vNodeList){
+			if(_node_ptr->resource_pntg == node_ptr->resource_pntg && _node_ptr->dedup_num == node_ptr->dedup_num){
+				for(auto task_ptr : _node_ptr->vTaskList){
+					if(task_ptr->id == model_id) found=true;
+				}
+			}
+		}
+#ifdef SCHED_DEBUG
+		std::cout << __func__ << ": checking model " << model_id << "found? " << found
+			<<std::endl;
+#endif
+
+		return found;
+	}
+
+	bool BaseScheduler::isPartLoaded(GPUPtr gpu_ptr, NodePtr node_ptr){
+		for (auto mem_node : gpu_ptr->vLoadedParts){
+			if(mem_node.part == node_ptr->resource_pntg && mem_node.dedup_num == node_ptr->dedup_num)
+				return true;
+
+		}
+		return false;
+	}
 
 
 } // Scheduling
