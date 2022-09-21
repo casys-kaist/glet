@@ -201,6 +201,72 @@ namespace Scheduling{
 
 		}
 	}
+	void BaseScheduler::initiateDevs(SimState &input, int nDevs){
+#ifdef SCALE_DEBUG
+		std::cout << __func__ << " initiating " << nDevs << " GPUs for simulator" << std::endl;
+#endif
+		input.vGPUList.clear();
+		int idx=0;
+		for(auto type : _typeToNumofTypeTable){
+			std::string gpu_type = type.first ;
+			int num_of_gpu = type.second;
+			for(int i=0; i < num_of_gpu; i++){
+				GPU new_gpu;
+				GPUPtr new_gpu_ptr=std::make_shared<GPU>(new_gpu);
+				new_gpu_ptr->GPUID=idx;
+				new_gpu_ptr->TYPE=gpu_type;
+				NodePtr new_node_ptr=makeEmptyNode(idx,100,gpu_type);
+				new_gpu_ptr->vNodeList.push_back(new_node_ptr);
+				input.vGPUList.push_back(new_gpu_ptr);
+				idx++;
+				if(idx >= nDevs) return;
+			}
+		}
+	}
+
+	int returnNDev(std::vector<int> &mem_per_dev, SimState &input){
+		int ndevs=0;
+		if(mem_per_dev.size() != input.vGPUList.size()){
+			std::cout<<__func__<<":WARNING: number of devices to configure does not match number of devices for simstate" << std::endl;
+			std::cout<<__func__<<": size of mem_vector: "<< mem_per_dev.size() <<" size of simstate.vGPUList: " << input.vGPUList.size() << std::endl;
+			ndevs=std::min(mem_per_dev.size(), input.vGPUList.size());
+		}
+		else ndevs = mem_per_dev.size();
+		return ndevs;
+	}
+	void BaseScheduler::initDevMems(SimState &input){
+		int total_devs = input.vGPUList.size();
+		assert(total_devs);
+		int idx=0;
+		for(auto type_num_pair : _typeToNumofTypeTable){
+			int ndevs=type_num_pair.second;
+			std::string type=type_num_pair.first;
+			for(int i=0; i <ndevs; i++){
+				initDevMem(input.vGPUList[idx], _nametoDevPerfModelTable[type].getDevMem()); 
+#ifdef SCHED_DEBUG
+				std::cout<< __func__ << ": "<< "dev" << idx << " will be setted up as " << _nametoDevPerfModelTable[type].getDevMem() << "MBs" << std::endl;
+#endif
+				idx++;
+				if(idx>=total_devs) return;
+			}
+		}
+	}
+
+	void BaseScheduler::initDevMem(GPUPtr gpu_ptr, int mem){
+		gpu_ptr->TOTAL_MEMORY=mem;
+		gpu_ptr->used_memory=0;  
+	}
+
+	void BaseScheduler::updateDevMemUsage(std::vector<int> &used_mem_per_dev, SimState &input){
+		int ndevs=returnNDev(used_mem_per_dev, input);
+		for(int i=0 ; i <ndevs; i++){
+			input.vGPUList[i]->used_memory=used_mem_per_dev[i];
+#ifdef SCHED_DEBUG
+			std::cout << __func__ << ": gpu " << i << " used memory updated to " << input.vGPUList[i]->used_memory << std::endl;
+#endif
+		}
+	}
+
 
 
 
