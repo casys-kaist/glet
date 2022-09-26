@@ -675,6 +675,71 @@ bool IncrementalScheduler::addModeltoSchedule(Task &task, SimState &decision){
 
 			return max_part;
 		}
+int IncrementalScheduler::getMinPart(std::string device, Task task, const NodePtr node_ptr, int &residue_rate ,int &result_batch){
+		int max_part = 200;
+		int given_pntg;
+		int given_id;
+		SimState dummy_sim;
+		if(node_ptr == NULL){
+			given_id=0;
+			given_pntg=100;
+		}
+		else{
+			given_id=node_ptr->id;
+			given_pntg=node_ptr->resource_pntg;
+		}
+#ifdef SCHED_DEBUG
+		std::cout << "[getMinPart] model_id: " << task.id << " given_pntg: " << given_pntg <<std::endl;
+#endif
+		int local_max_part = min(_availParts.front(),given_pntg);
+#ifdef SCHED_DEBUG
+		std::cout << "[getMinPart]  local_max_part: "  << local_max_part <<std::endl;
+#endif
+
+		Node temp_node;
+		NodePtr temp_node_ptr=std::make_shared<Node>(temp_node);
+		temp_node_ptr->id=given_id;
+		temp_node_ptr->resource_pntg=local_max_part;
+		temp_node_ptr->type = node_ptr->type;
+
+		int max_batch = getMaxBatch(task,temp_node_ptr,dummy_sim,residue_rate,true,false);
+#ifdef SCHED_DEBUG
+		std::cout << "[getMinPart]  max_batch "  << max_batch <<std::endl;
+#endif
+		if(!max_batch) return 0;
+
+		assert(_MIN_BATCH <= max_batch && max_batch <= _MAX_BATCH);
+		int prev_part=local_max_part;
+		for(auto part : _availParts){ // starting from highest partition
+			if(part > local_max_part) continue;
+			float latency = getLatency(device, task.id,max_batch,part);
+			float duty_cycle = max_batch * 1000.0 / residue_rate;
+#ifdef SCHED_DEBUG
+			std::cout << "[getMinPart] part: " << part << "latency: " << latency << " duty_cycle: " << duty_cycle << " SLO: "<< task.SLO << std::endl;
+#endif
+			if(duty_cycle < latency){
+
+				if(part == _availParts[0]){
+					prev_part=part;
+				}
+				break; 
+			}
+			if(task.SLO < latency + duty_cycle){
+				break;
+			} 
+			prev_part=part;
+#ifdef SCHED_DEBUG
+			std::cout << "prev_part: " << prev_part << std::endl;
+#endif
+
+		}
+		result_batch=max_batch;
+		max_part=prev_part;
+#ifdef SCHED_DEBUG
+		printf("[getMinPart] min_part: %d, for task id: %d \n", max_part,task.id);
+#endif
+		return max_part;
+	}
 
 
 
