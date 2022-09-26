@@ -1285,8 +1285,61 @@ int IncrementalScheduler::getMinPart(std::string device, Task task, const NodePt
 			if(task.request_rate+task.additional_rate > TRP_SLACK) return EXIT_FAILURE;
 			task.request_rate=0;
 			return EXIT_SUCCESS;
-		}
+	}
 
+// added 2022_06_07: added for expermential purpose, trying out heterogeneous scheduling for GPUs
+	void IncrementalScheduler::getMinPartSum(Task &task, std::string &output, const int MAX_PART){
+		std::vector<NodePtr> _output_vec;
+		std::map<std::string, int> part_sum_per_type;
+
+		for(auto type_num_pair : _typeToNumofTypeTable){
+			_output_vec.clear();
+			estimateTrp(type_num_pair.first, task,task.request_rate,_output_vec, MAX_PART);
+			int sum_of_parts=0;
+			for(auto item : _output_vec) sum_of_parts += item->resource_pntg;
+			part_sum_per_type[type_num_pair.first]=sum_of_parts;
+		}
+		// find minuimum and check whether parts are the same
+		//int _min_parts = 100 * getMaxGPUs();
+		int _min_parts = 100000;
+
+		bool same_min=false;
+		for(auto type_sum_pair: part_sum_per_type){
+			if(_min_parts == type_sum_pair.second) same_min=true;
+			if(type_sum_pair.second < _min_parts){
+				_min_parts = type_sum_pair.second;
+				output=type_sum_pair.first;
+			} 
+		}
+		// if minimum parts are same, chose the one that yeilds the most throughput when scheduled on one GPU
+		if(same_min){
+			float max_trp=0.0;
+			float fit_utilization=10.0;
+			for(auto type_sum_pair: part_sum_per_type){
+				if(type_sum_pair.second != _min_parts) continue;
+				int ideal_part = getMaxReturnPart(task,type_sum_pair.first);
+				int other_part = 100-ideal_part;
+				int temp_batch; 
+				float local_trp = getMaxSaturateTrp(task,temp_batch,ideal_part,type_sum_pair.first);
+				local_trp += getMaxSaturateTrp(task,temp_batch,other_part,type_sum_pair.first);
+#ifdef SCHED_DEBUG
+				std::cout << "[getMinPartSum] min_part_sum is "<< _min_parts <<" and max throughput of type " << type_sum_pair.first << " is " << local_trp << std::endl;
+#endif
+				float utilization = task.request_rate / local_trp;     
+				//utilization = (utilization >=1) ? utilization-1 : utilization;
+				//if(max_trp < local_trp){
+				//  max_trp = local_trp;
+				if(fit_utilization > utilization){
+					fit_utilization = utilization;
+					output = type_sum_pair.first;
+				}
+			}
+			}    
+
+#ifdef SCHED_DEBUG
+			std::cout << "[getMinPartSum] minpart output type: " << output << std::endl;
+#endif 
+		}
 
 
 } // namespace:Scheduling
