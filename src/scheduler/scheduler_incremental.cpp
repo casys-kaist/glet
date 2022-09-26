@@ -1491,4 +1491,68 @@ bool IncrementalScheduler::mergeResidue(Task &task, SimState &input_sim){
 			return EXIT_SUCCESS;
 		}
 
+		// check whether decistion needs to be reverted 
+		// used as a gadget function for Reqdjust
+	bool IncrementalScheduler::checkNeedtoRevert(NodePtr &new_node_ptr, Task &task, SimState &input){
+			// added memory check, if it does not fit, revert
+			bool revert=false;
+
+#ifdef CHECK_NETBW
+
+			if(_isNLCInitated){
+				if(!_NLC.isBandwidthOK(input.vGPUList[new_node_ptr->id])){
+#ifdef SCHED_DEBUG
+					std::cout << __func__ << ": netbw_check failed!" << std::endl;
+#endif
+					revert=true;
+				}
+			}
+#endif
+
+			if(_useInterference){
+#ifdef SCHED_DEBUG
+				std::cout << __func__ << ": task.request_rate : " << task.request_rate << "task.additional_rate : " << task.additional_rate
+					<<std::endl;
+#endif 
+				int additional_rate=0;
+				// if the other node is also a saturated node, and SLO is volatted
+				for(auto node_ptr : input.vGPUList[new_node_ptr->id]->vNodeList){
+					if(node_ptr->dedup_num == new_node_ptr->dedup_num && node_ptr->resource_pntg == new_node_ptr->resource_pntg) continue;
+					// if saturated node
+					if(node_ptr->occupancy>=1){
+						int rate_to_add=0;
+						int task_id_to_add;
+						if(adjustSatNode(node_ptr,input)){
+							revert=true;
+							break;
+						}
+					}
+					else{ // if residue node
+						if(adjustResNode(node_ptr,input)) revert=true;
+					}
+
+				}
+				// if not going to be reverted, add request rate to take care of
+				if(!revert){
+					task.request_rate+=task.additional_rate;
+					task.additional_rate=0;
+				}
+
+			}
+			return revert;
+		}
+		// clear nodes of updated info
+		// used as a gadget function for readjust
+		void IncrementalScheduler::revertNode(NodePtr &node_ptr,Task &task, SimState &input){
+			assert(node_ptr->vTaskList.size()<=1);
+#ifdef SCHED_DEBUG
+			printf("[readjust] need to revert results \n");
+#endif
+			node_ptr->occupancy=0;
+			node_ptr->vTaskList.clear();
+			node_ptr->duty_cycle=0;
+		}
+
+
+
 } // namespace:Scheduling
