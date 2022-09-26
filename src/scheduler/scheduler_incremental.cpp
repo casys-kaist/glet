@@ -559,6 +559,51 @@ bool IncrementalScheduler::addModeltoSchedule(Task &task, SimState &decision){
 		return EXIT_SUCCESS;
 	}
 
+void IncrementalScheduler::getEstimateTrpST(std::string device, const Task &task, int rate, std::vector<NodePtr> &output_vec, const int MAX_PART)
+		{
+			int _rate = rate;
+			std::vector<int> parts = _availParts;
+			sort(parts.begin(), parts.end());
+
+			// 1. find min part which can satisfy rate
+			while (_rate > 0)
+			{
+				int max_batch;
+				int max_trp = 0;
+				int max_part = 0;
+				//
+				for (int part : parts)
+				{
+					max_part = part;
+					max_trp = getMaxSaturateTrp(task, max_batch, part, device);
+					if (max_trp > _rate)
+						break;
+				}
+				assert(max_trp != 0 && max_part != 0);
+				NodePtr temp_node_ptr = makeEmptyNode(output_vec.size(), max_part, device);
+				float latency = getLatency(device, task.id, max_batch, max_part);
+#ifdef SCHED_DEBUG
+				printf("[EstimateTrpST]node- latency: %lf, batch_size: %d, rate: %d, part: %d  \n", latency, max_batch, _rate, max_part );
+#endif
+				temp_node_ptr->duty_cycle= max_batch * (1000.0  / _rate);
+				Task new_task;
+				new_task.id=task.id;
+				new_task.request_rate=_rate;
+				new_task.batch_size=max_batch;
+				new_task.SLO=task.SLO;
+				new_task.throughput=max_trp;
+				TaskPtr temp_task_ptr = std::make_shared<Task>(new_task);          
+#ifdef SCHED_DEBUG
+				printf("[EstimateTrpST] batch_size after allocating : %d, trpt: %lf \n", temp_task_ptr->batch_size, temp_task_ptr->throughput);
+#endif
+				temp_node_ptr->occupancy= latency / temp_node_ptr->duty_cycle;
+				temp_node_ptr->vTaskList.push_back(temp_task_ptr);
+				output_vec.push_back(temp_node_ptr);
+				_rate-=max_trp;
+			}
+
+		}
+
 
 
 
