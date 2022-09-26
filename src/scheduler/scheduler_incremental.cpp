@@ -25,5 +25,21 @@ namespace Scheduling{
 		return EXIT_SUCCESS;
 	}
 
+	float min(const float a, const float b){
+		return (a<=b) ? a : b;
+	}
+
+	bool checkContain(const int model_num, const NodePtr &node_ptr){
+		for(auto task_ptr : node_ptr->vTaskList){
+			if(model_num == task_ptr->id) return 1;
+		}
+		return 0;
+	}
+
+	bool cmp_nodeptr_occu_dsc(const NodePtr &a, const NodePtr &b){
+		return a->occupancy > b->occupancy;
+	}
+
+
 	
 } // namespace:Scheduling
