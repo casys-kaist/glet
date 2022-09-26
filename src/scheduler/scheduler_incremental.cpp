@@ -740,6 +740,61 @@ int IncrementalScheduler::getMinPart(std::string device, Task task, const NodePt
 #endif
 		return max_part;
 	}
+	bool IncrementalScheduler::addGPUMemUsage(GPUPtr &gpu_ptr, int model_id, NodePtr &node_ptr){
+#ifdef SCHED_DEBUG
+			std::cout << __func__ << "called"  << std::endl;
+#endif 
+			int additional_mem = 0;
+			if(isModelLoaded(gpu_ptr, node_ptr, model_id)) return EXIT_SUCCESS;        
+			if(!isPartLoaded(gpu_ptr,node_ptr)){
+				additional_mem=_DEFAULT_PYTORCH_MEM_USAGE;
+			}
+			if(doesFitMemLimit(gpu_ptr, model_id,node_ptr)){
+				gpu_ptr->used_memory += (_mapModelIDtoMemSize[model_id] + additional_mem);
+#ifdef SCHED_DEBUG
+				std::cout << "gpu" << gpu_ptr->GPUID <<  " used_memory updated to " << gpu_ptr->used_memory << std::endl;
+				std::cout << "gpu" << gpu_ptr->GPUID <<  " remaining memory: " << gpu_ptr->TOTAL_MEMORY - gpu_ptr->used_memory << std::endl;
+#endif 
+				MemNode temp;
+				temp.dedup_num=node_ptr->dedup_num;
+				temp.part=node_ptr->resource_pntg;
+				gpu_ptr->vLoadedParts.push_back(temp);
+#ifdef SCHED_DEBUG
+				std::cout << "gpu" << gpu_ptr->GPUID <<  " loaded parts: ";
+				for(auto mem_info : gpu_ptr->vLoadedParts){
+					std::cout << "["<<mem_info.part << ", " << mem_info.dedup_num<< "]";
+				}
+				std::cout<<std::endl;
+#endif
+				return EXIT_SUCCESS;
+			}
+			return EXIT_FAILURE;
+		}
+
+	bool IncrementalScheduler::subtractGPUMemUsage(GPUPtr &gpu_ptr, int model_id, NodePtr &node_ptr){
+#ifdef SCHED_DEBUG
+			std::cout << __func__ << "called"  << std::endl;
+#endif
+			int additional_mem = 0;
+			// if part is not even loaded... this is a huge error on the programmer's behalf
+			assert(isPartLoaded(gpu_ptr, node_ptr));
+			// if model is not loaded, no need to substract
+			if (!isModelLoaded(gpu_ptr, node_ptr, model_id))
+				return EXIT_SUCCESS;
+			if (gpu_ptr->used_memory - _mapModelIDtoMemSize[model_id] < 0)
+			{
+				std::cout << __func__ << ": gpu " << gpu_ptr->GPUID << " used memory: " << gpu_ptr->used_memory << std::endl;
+				std::cout << __func__ << ": CAN NOT subtract" << _mapModelIDtoMemSize[model_id] << std::endl;
+				return EXIT_FAILURE;
+			}
+			gpu_ptr->used_memory -= _mapModelIDtoMemSize[model_id];
+#ifdef SCHED_DEBUG
+			std::cout << "gpu" << gpu_ptr->GPUID <<  "used_memory updated to " << gpu_ptr->used_memory << std::endl;
+			std::cout << "gpu" << gpu_ptr->GPUID <<  "remaining memory: " << gpu_ptr->TOTAL_MEMORY - gpu_ptr->used_memory << std::endl;
+#endif 
+			return EXIT_SUCCESS;
+		}
+
 
 
 
