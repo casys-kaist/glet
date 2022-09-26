@@ -1187,5 +1187,106 @@ int IncrementalScheduler::getMinPart(std::string device, Task task, const NodePt
 			return EXIT_SUCCESS;
 	}
 
+	void copyToNode(NodePtr org_node, NodePtr dst_node, bool enable_repart){
+			//dst_node->id=org_node->id;
+			dst_node->occupancy=org_node->occupancy;
+			// if repartitioning is not enabled, resoource percentage should not be changed
+			if(enable_repart) dst_node->resource_pntg=org_node->resource_pntg;
+			dst_node->duty_cycle = org_node->duty_cycle;
+			dst_node->vTaskList.clear();
+			dst_node->reserved = org_node->reserved;
+			//dst_node->dedup_num = org_node->dedup_num;
+			for(auto task_ptr : org_node->vTaskList){
+				dst_node->vTaskList.push_back(task_ptr);
+			}
+		}
+
+
+	bool IncrementalScheduler::allocateFit(const std::vector<NodePtr> &estimate, Task &task, SimState &decision){
+			// compare pntg and allocate to best fit
+			NodePtr best_fit_ptr;
+			int initial_rate = task.request_rate;
+			std::vector<NodePtr> flagged;
+			for (auto input_ptr : estimate)
+			{
+#ifdef SCHED_DEBUG
+				printf("[Allocatefit] fitting part: %d \n", input_ptr->resource_pntg );
+#endif 
+				bool isresidue;
+				if(input_ptr->occupancy==1){
+					isresidue=false;
+				}
+				else isresidue=true;
+				if(findBestFit(decision,input_ptr,flagged,best_fit_ptr)){
+					printf("[allocateFit] ran out of options\n");
+					return EXIT_FAILURE;
+				}
+				int best_pntg = best_fit_ptr->resource_pntg;
+				int input_pntg = input_ptr->resource_pntg;
+
+#ifdef SCHED_DEBUG
+				printf("[allocateFit] found pntg: %d, input pntg: %d \n",best_pntg,input_pntg );
+#endif
+
+				if(best_pntg != 100 && best_pntg > input_pntg){
+					// change setup of input node, since resource allocation needs to change
+					input_ptr->resource_pntg=best_pntg;
+					assert(input_ptr->vTaskList.size() == 1);
+					TaskPtr temp = input_ptr->vTaskList[0];
+					temp->batch_size=getMaxBatch(*temp,input_ptr,decision,temp->request_rate,isresidue,true);
+					if(temp->batch_size==0) return EXIT_FAILURE;
+					float latency = getLatency(input_ptr->type,temp->id,temp->batch_size,input_ptr,decision);
+					if(!isresidue){
+						input_ptr->duty_cycle = latency;
+					}
+					else input_ptr->duty_cycle = std::max((temp->batch_size * float(1000.0)) / temp->request_rate, latency);
+					temp->throughput=(temp->batch_size * 1000.0 ) / input_ptr->duty_cycle;
+					input_ptr->occupancy = latency / input_ptr->duty_cycle;
+				}
+
+				// if allocated with 100% node and required node is below 100%, split it for further use
+				if(best_pntg == 100 && input_pntg < 100 && _useRepartition){
+					best_fit_ptr->resource_pntg=input_pntg;
+					NodePtr new_node_ptr = makeEmptyNode(best_fit_ptr->id,100-input_pntg,best_fit_ptr->type);
+					new_node_ptr->id = best_fit_ptr->id;
+					if(input_pntg == 50) new_node_ptr->dedup_num=1;
+					decision.vGPUList[best_fit_ptr->id]->vNodeList.push_back(new_node_ptr);
+				}
+
+				//allocate to Node
+				copyToNode(input_ptr, best_fit_ptr, _useRepartition);
+				//update memory usage
+#ifdef CHECK_MEM
+				addGPUMemUsage(decision.vGPUList[best_fit_ptr->id], task.id, best_fit_ptr);
+#endif
+
+				if(_useInterference) {
+					for(auto node_ptr : decision.vGPUList[best_fit_ptr->id]->vNodeList){
+						//if(node_ptr->dedup_num == best_fit_ptr->dedup_num && node_ptr->resource_pntg == best_fit_ptr->resource_pntg) continue;
+						if(node_ptr->occupancy ==1){
+							int add_trp;
+							int add_id;
+							if(adjustSatNode(node_ptr,decision, task)){
+								return EXIT_FAILURE;
+							}
+							std::cout << "remaining rate: " << task.additional_rate << std::endl;
+						} 
+						else adjustResNode(node_ptr,decision);
+					}
+				}
+
+				assert(best_fit_ptr->vTaskList.size() ==1); // there should be only one task
+				task.request_rate-=best_fit_ptr->vTaskList[0]->throughput;
+#ifdef SCHED_DEBUG
+				printf("[allocateFit] Allocated successfully!! remaining rate of task %d : %d \n", task.id, task.request_rate+task.additional_rate);
+#endif
+
+			}
+			if(task.request_rate+task.additional_rate > TRP_SLACK) return EXIT_FAILURE;
+			task.request_rate=0;
+			return EXIT_SUCCESS;
+		}
+
+
 
 } // namespace:Scheduling
