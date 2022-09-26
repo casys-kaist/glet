@@ -25,6 +25,79 @@ namespace Scheduling{
 		return EXIT_SUCCESS;
 	}
 
+	bool IncrementalScheduler::incrementalScehduling(std::vector<Task> &session, SimState &decision){
+		if(decision.vGPUList.empty()){
+			initiateDevs(decision,_numMaxGPU);
+		}
+		std::map<int,float> task_to_org_rate_mapping;
+		std::map<int,float> task_to_intf_retry_flag;
+		if(_useInterference){
+			for(auto task : session){
+				task_to_intf_retry_flag[task.id]=false;
+			}
+		}
+		bool good_to_go=false;
+		while(!good_to_go){
+			task_to_org_rate_mapping.clear();
+			for(auto task : session){
+				task_to_org_rate_mapping[task.id]=task.request_rate;
+			}
+			if(elasticPartitioning(session,decision)){
+				return EXIT_FAILURE;
+			}
+			good_to_go=true;
+			//check how much leftover requests were  stored after adjusting batches
+
+			if(_useInterference){
+				// 1. addup all throughputs for all tasks
+				std::map<int,float> task_to_trpt;
+				for(auto gpu_ptr : decision.vGPUList){
+					for(auto node_ptr : gpu_ptr->vNodeList){
+						for(auto task_ptr : node_ptr->vTaskList){
+							task_to_trpt[task_ptr->id]+=task_ptr->throughput;
+						}
+					}
+				}
+				std::vector<Task> new_session;
+				for(auto task:  session){
+					const float INTF_THRESHOLD=0.85;
+#ifdef SCHED_DEBUG
+					std::cout << "[incrementalScheduling]: task_id: " << task.id << " task_trpt: "<<  task_to_trpt[task.id] << " task_org_rate: " << task_to_org_rate_mapping[task.id]
+						<<std::endl;
+#endif
+					if(task_to_trpt[task.id] < task_to_org_rate_mapping[task.id] * INTF_THRESHOLD){
+						if(task_to_intf_retry_flag[task.id]) return EXIT_FAILURE;
+#ifdef SCHED_DEBUG
+						std::cout << "[incrementalScheduling]: task_id: " << task.id << " remaining rate: " << task_to_org_rate_mapping[task.id] - task_to_trpt[task.id]
+							<<std::endl;    
+#endif
+						task_to_intf_retry_flag[task.id]=true;
+						good_to_go=false;
+						// create new task in new task vector
+						Task new_task;
+						new_task.SLO=task.SLO;
+						new_task.id=task.id;
+						//new_task.request_rate=task_to_org_rate_mapping[task.id]*INTF_THRESHOLD;
+						new_task.request_rate=task_to_org_rate_mapping[task.id];
+						new_session.push_back(new_task);
+					}
+				}
+				session.clear();
+				copySession(new_session,session);
+			}// _useInterference
+
+		}// good_to_go
+
+		// try scheduling without tightening batch size
+		// uncomment this if tightening deems neccessary 
+		/*  
+		    for(auto task : session){
+		    residueTightening(task, decision);
+		    }
+		    */
+		return EXIT_SUCCESS;
+	}
+
 	float min(const float a, const float b){
 		return (a<=b) ? a : b;
 	}
