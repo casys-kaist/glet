@@ -40,6 +40,24 @@ namespace Scheduling{
 		return a->occupancy > b->occupancy;
 	}
 
+	bool cmp_task_dsc(const Task &a, const Task &b){
+		return a.request_rate * a.SLO < b.request_rate * b.SLO || 
+			((a.request_rate * a.SLO == b.request_rate *b.SLO)  && (a.id> b.id));
+	}
+
+
+	/*
+	   bool cmp_task_dsc(const Task &a, const Task &b){
+	   return a.request_rate < b.request_rate  || 
+	   ((a.request_rate  == b.request_rate)  && (a.id> b.id));
+
+	//    return a.SLO < b.SLO || 
+	//        ((a.SLO == b.SLO)  && (a.id> b.id));
+	}
+	*/
+
+
+
 
 	
 } // namespace:Scheduling
