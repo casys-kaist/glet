@@ -603,6 +603,24 @@ void IncrementalScheduler::getEstimateTrpST(std::string device, const Task &task
 			}
 
 		}
+		// receives task, and resource percentage the task will run as input and stores the maximum batch size it can support
+	// returns maximum throughput for that throughput
+	float IncrementalScheduler::getMaxSaturateTrp(const Task &task, int &output_batch, const int resource_pntg, std::string type){
+
+		bool found=false;
+		float trp;
+		for(auto entry : *_perModelSatTable[task.id]){
+			if(resource_pntg == entry.part && type == entry.type)
+			{
+				found=true;
+				trp=entry.sat_trp;
+				output_batch=entry.max_batch;
+			}
+		}
+		assert(found); // if this is not found we have a problem
+		return trp;
+	}
+
 		void IncrementalScheduler::setupNetworkChecker(std::string json_file){
 			if(_NLC.setupPerTaskInputDimension(json_file)){
 				_isNLCInitated=false;
