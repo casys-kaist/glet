@@ -1364,4 +1364,131 @@ bool IncrementalScheduler::checkTypePriority(std::string &output_type){
 			return EXIT_FAILURE;
 		}
 
+bool IncrementalScheduler::mergeResidue(Task &task, SimState &input_sim){
+#ifdef SCHED_DEBUG
+			std::cout << "[mergeResidue] request_rate: " << task.request_rate << ", additional rate: " << task.additional_rate << std::endl; 
+#endif
+			int residue_cnt = 0;
+			int request_rate = task.request_rate;
+			int dummy_batch;
+			float min_sat_trp = __FLT_MAX__;
+			std::pair<std::string, int> type_part_pair;
+			for (auto gpu_ptr : input_sim.vGPUList)
+			{
+				for (auto node_ptr : gpu_ptr->vNodeList)
+				{
+					if (node_ptr->occupancy < 1.0 && node_ptr->vTaskList.size() == 1)
+					{
+						// if the node is residue and has only one task
+						if (node_ptr->vTaskList[0]->id == task.id)
+						{
+							request_rate += node_ptr->vTaskList[0]->throughput;
+							residue_cnt++;
+							// we can have several versions of saturate trps due to different types
+							float sat_trp = getMaxSaturateTrp(task, dummy_batch, node_ptr->resource_pntg, node_ptr->type);
+							if (sat_trp < min_sat_trp)
+							{
+								min_sat_trp = sat_trp;
+								type_part_pair.first = node_ptr->type;
+								type_part_pair.second = node_ptr->resource_pntg;
+							}
+						}
+					}
+				}
+			}
+#ifdef SCHED_DEBUG
+			std::cout << "[mergeResidue]" << "residue count: "<<residue_cnt << " request_rate: " << request_rate << std::endl;
+			std::cout << "[mergeResidue]" <<"limit trp: " << min_sat_trp << std::endl;
+#endif
+			if( residue_cnt==0||(residue_cnt ==1 && request_rate < TRP_SLACK) || min_sat_trp < request_rate) {
+#ifdef SCHED_DEBUG
+				std::cout << "[mergeResidue] will skip! because residue cant be improved"<<std::endl;;
+#endif
+				if(task.request_rate > TRP_SLACK) return EXIT_FAILURE;
+				else return EXIT_SUCCESS;
+			}
+
+			for(auto gpu_ptr : input_sim.vGPUList){
+				for(auto node_ptr : gpu_ptr->vNodeList){
+					if(node_ptr->occupancy < 1.0 && node_ptr->vTaskList.size() ==1){
+						//if the node is residue and has only one task
+						if(node_ptr->vTaskList[0]->id == task.id){
+							// reset node_ptr setup
+							subtractGPUMemUsage(gpu_ptr,task.id,node_ptr);
+							node_ptr->vTaskList.clear();
+							node_ptr->occupancy=0;
+							node_ptr->duty_cycle=0;
+						}
+					}
+				}
+			}
+#ifdef SCHED_DEBUG
+			std::cout << "[mergeResidue] intially updated to task " << task.id << " request rate : "<<request_rate << std::endl;
+#endif
+			bool found=false;
+			for(auto gpu_ptr : input_sim.vGPUList){
+				for(auto node_ptr : gpu_ptr->vNodeList){
+#ifdef CHECK_MEM
+#ifdef SCALE_DEBUG
+					std::cout << __func__ << ": checking memory for " << task.id << " on " << node_ptr->id << std::endl;
+#endif
+
+					if(!doesFitMemLimit(gpu_ptr,task.id,node_ptr)){
+#ifdef SCHED_DEBUG
+						std::cout << __func__ << ": failed memory check!" << std::endl;
+#endif
+						continue;
+					} 
+#endif
+					if(node_ptr->vTaskList.empty() && node_ptr->type == type_part_pair.first && node_ptr->resource_pntg ==type_part_pair.second){
+						Task temp_task;
+						TaskPtr temp_task_ptr = std::make_shared<Task>(temp_task);
+						temp_task_ptr->id=task.id;
+						temp_task_ptr->SLO = task.SLO;
+						temp_task_ptr->batch_size = getMaxBatch(task,node_ptr,input_sim,request_rate,true,true);
+
+						if(temp_task_ptr->batch_size == 0) continue; 
+						node_ptr->duty_cycle = (temp_task_ptr->batch_size * 1000.0) / request_rate;
+						node_ptr->occupancy = getLatency(node_ptr->type,temp_task_ptr->id,temp_task_ptr->batch_size,node_ptr,input_sim) / node_ptr->duty_cycle;
+						temp_task_ptr->throughput = temp_task_ptr->batch_size * 1000.0 / node_ptr->duty_cycle;
+						temp_task_ptr->request_rate = temp_task_ptr->throughput;
+						node_ptr->vTaskList.push_back(temp_task_ptr);
+						task.request_rate = (request_rate > temp_task_ptr->throughput) ? request_rate - temp_task_ptr->throughput: 0; 
+#ifdef SCHED_DEBUG
+						std::cout << "[mergeResidue] updated to task " << task.id << " request rate : "<<task.request_rate << std::endl;
+#endif
+
+						found=true;
+						break;
+					}
+				}
+				if(found) break;
+			}
+#ifdef SCHED_DEBUG
+			std::cout << "[mergeResidue] ended with task " << task.id << " request rate : "<<task.request_rate << std::endl;
+#endif
+			if(task.request_rate > TRP_SLACK) return EXIT_FAILURE;
+
+
+			// Merge Nodes that have no tasks after merging
+			for(auto gpu_ptr : input_sim.vGPUList){
+				if(gpu_ptr->vNodeList.size() >1){
+					int task_cnt=0;
+					for(auto node_ptr : gpu_ptr->vNodeList){
+						task_cnt += node_ptr->vTaskList.size();
+					}
+					if(task_cnt == 0 && _useRepartition){
+#ifdef SCHED_DEBUG
+						std::cout << "[mergeResidue] merging nodes of gpu: " << gpu_ptr->GPUID << std::endl;
+#endif
+						// delete every node except first one
+						gpu_ptr->vNodeList.erase(gpu_ptr->vNodeList.begin()+1, gpu_ptr->vNodeList.end());          
+						gpu_ptr->vNodeList[0]->dedup_num=0;
+						gpu_ptr->vNodeList[0]->resource_pntg=100;
+					}
+				}
+			}
+			return EXIT_SUCCESS;
+		}
+
 } // namespace:Scheduling
