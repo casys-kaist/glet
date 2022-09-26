@@ -56,6 +56,38 @@ namespace Scheduling{
 	}
 	*/
 
+	bool IncrementalScheduler::elasticPartitioning(std::vector<Task> &session, SimState &decision){
+		sort(session.begin(), session.end(),cmp_task_dsc);
+		for(auto task : session){
+			// check if we have an available saturate table for task
+			if (_perModelSatTable.find(task.id) == _perModelSatTable.end())
+			{
+				//if not, setup a table
+				initSaturateTrp(task);
+			}
+			if(addModeltoSchedule(task, decision)){
+#ifdef SCHED_DEBUG
+				std::cout << "[incrementalScheduling] adding model failed!" << std::endl;
+#endif
+				return EXIT_FAILURE;
+			}
+
+#ifdef SCHED_DEBUG
+			printResults(decision);
+#endif
+		}
+
+	}
+
+// stores value for saturating throughput of each available partition
+	void IncrementalScheduler::initSaturateTrp(Task &task){
+
+	}
+
+	void IncrementalScheduler::estimateTrp(std::string device, Task &task, int rate, std::vector<NodePtr> &output_vec, const int MAX_PART){
+	
+	}
+
 
 
 
