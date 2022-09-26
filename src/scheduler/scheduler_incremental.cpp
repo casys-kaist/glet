@@ -603,9 +603,16 @@ void IncrementalScheduler::getEstimateTrpST(std::string device, const Task &task
 			}
 
 		}
+		void IncrementalScheduler::setupNetworkChecker(std::string json_file){
+			if(_NLC.setupPerTaskInputDimension(json_file)){
+				_isNLCInitated=false;
+			}
+			else _isNLCInitated=true;
+		}
+
+		bool IncrementalScheduler::inspectNetworkBW(SimState &input){
+			return _NLC.isBandwidthOK(input);
+		}
 
 
-
-
-	
 } // namespace:Scheduling
