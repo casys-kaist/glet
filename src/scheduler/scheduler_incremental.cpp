@@ -1553,6 +1553,33 @@ bool IncrementalScheduler::mergeResidue(Task &task, SimState &input_sim){
 			node_ptr->duty_cycle=0;
 		}
 
+	bool IncrementalScheduler::checkForInterference(std::string device, NodePtr the_node, NodePtr the_real_node, SimState &sim){
+			NodePtr neighbor_node;
+#ifdef SCHED_DEBUG
+			std::cout << __func__ << "the real node : [" << the_real_node->id << "," <<the_real_node->resource_pntg << "]" << std::endl;
+#endif
+
+			if(the_real_node->resource_pntg==100) return false;
+			if(!getOtherNode(the_real_node,neighbor_node,sim)){
+				for(auto task_ptr : neighbor_node->vTaskList){
+					float pure_latency = _nametoDevPerfModelTable[device].getLatency(getModelName(task_ptr->id),task_ptr->batch_size,neighbor_node->resource_pntg);
+					// form a temporal GPU for getting interference;
+					GPU temp_gpu;
+					GPUPtr temp_gpu_ptr = std::make_shared<GPU>(temp_gpu);
+					temp_gpu_ptr->vNodeList.push_back(neighbor_node);
+					NodePtr temp_node_ptr= makeEmptyNode(neighbor_node->id,the_real_node->resource_pntg,the_real_node->type);
+					for(auto task_ptr : the_node->vTaskList) temp_node_ptr->vTaskList.push_back(task_ptr);
+
+					double interference = getInterference(device, task_ptr->id,task_ptr->batch_size,neighbor_node,temp_gpu_ptr);
+					float duty_cycle = neighbor_node->duty_cycle;
+					float latency = pure_latency *(interference-1.0)+ getBatchLatency(getModelName(task_ptr->id),task_ptr->batch_size) + duty_cycle;
+					if(latency + duty_cycle> task_ptr->SLO) return true;
+
+				}
+			}
+			return false;
+		}
+
 
 
 } // namespace:Scheduling
