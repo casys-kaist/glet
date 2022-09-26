@@ -794,7 +794,7 @@ int IncrementalScheduler::getMinPart(std::string device, Task task, const NodePt
 #endif 
 			return EXIT_SUCCESS;
 		}
-bool IncrementalScheduler::doesFitMemLimit(GPUPtr &gpu_ptr, int model_id, NodePtr &node_ptr){
+	bool IncrementalScheduler::doesFitMemLimit(GPUPtr &gpu_ptr, int model_id, NodePtr &node_ptr){
 			assert(_mapModelIDtoMemSize[model_id] !=0);
 			assert(gpu_ptr->TOTAL_MEMORY);
 			int additional_memory=0;
@@ -823,8 +823,229 @@ bool IncrementalScheduler::doesFitMemLimit(GPUPtr &gpu_ptr, int model_id, NodePt
 
 #endif
 			return result;
-		}
+	}
 
+	// readjusting algorithm: migrates tasks and changes partition
+		//if possible, try to squeeze taks into smaller partitions for given nodes
+		bool IncrementalScheduler::readjust(Task &task, std::vector<NodePtr> &given, SimState &decision){
+			int request_rate = task.request_rate;
+			int max_batch;
+			bool proceed_to_residue=false;
+			sort(given.begin(), given.end(),cmp_nodeptr_dsc);
+			if(_useInterference){
+				task.request_rate += task.additional_rate;
+				task.additional_rate=0;
+			}
+#ifdef SCHED_DEBUG
+			printf("[readjust] Called for task id : %d and rate %d \n", task.id, task.request_rate);
+#endif
+
+			// readjusted saturate scheduling
+			while(task.request_rate+task.additional_rate> TRP_SLACK){
+#ifdef SCHED_DEBUG
+				std::cout << "request_rate: " << task.request_rate << ", additional rate: " << task.additional_rate << std::endl; 
+#endif
+				if(given.empty()) break;
+				NodePtr temp_node_ptr;
+
+				//added 2022-06-11 
+				//check if we need to find high-prioirity types
+				std::string type_to_prioritize;
+				if(checkTypePriority(type_to_prioritize)){
+					bool successful=false;
+					//if so find the node with prioritized type, if there are no more nodes just chose front 
+					if(getNodewithPriorityType(task,type_to_prioritize,temp_node_ptr,given)){
+						temp_node_ptr=given.front();
+					}
+				} 
+				else{
+					getMinPartSum(task,type_to_prioritize,getMaxPartSize(decision));
+					if(getNodewithPriorityType(task,type_to_prioritize,temp_node_ptr,given)){
+						temp_node_ptr=given.front();
+					}
+				}
+				int temp_batch;
+				// if allocated with 100% node and required node is below 100%, split it for further use
+				if(temp_node_ptr->resource_pntg == 100 && _usePart && _useRepartition){
+					std::cout << "Following node will be splitted" << std::endl;
+					printNodeInfo(temp_node_ptr);
+					std::vector<NodePtr> candidates;
+					const float  MAX_PART = getMaxPartSize(decision);
+					estimateTrp(temp_node_ptr->type,task,task.request_rate,candidates,MAX_PART);
+					assert(!candidates.empty());
+					int max_part = candidates[0]->resource_pntg;
+					assert(candidates[0]->vTaskList.size() ==1);
+					temp_batch=candidates[0]->vTaskList[0]->batch_size;
+#ifdef SCHED_DEBUG
+					std::cout << "[readjust] Splitting node into " << max_part << " and " << 100-max_part << std::endl;
+#endif
+					if(max_part < 100){
+						printResults(decision);
+						temp_node_ptr->resource_pntg=max_part;
+						NodePtr new_node_ptr = makeEmptyNode(temp_node_ptr->id,100-max_part,temp_node_ptr->type);
+						if(max_part == 50) new_node_ptr->dedup_num=1;
+						decision.vGPUList[temp_node_ptr->id]->vNodeList.push_back(new_node_ptr);
+						// also add to given resources for this task
+						given.push_back(new_node_ptr);
+						sort(given.begin()+1, given.end(),cmp_nodeptr_dsc);
+					}
+				}
+				else{
+					// get batch size for saturated partition
+					temp_batch = getMaxBatch(task,temp_node_ptr,decision,task.request_rate,false,true);
+					// assuming we can modify the batch size later, we fix the temporary max batch size to 1
+					if(temp_batch == 0) temp_batch=1;
+				}
+				int max_batch=temp_batch;
+
+				float latency = getLatency(temp_node_ptr->type,task.id,max_batch,temp_node_ptr,decision);
+				float local_max_trp = max_batch * (1000.0 / latency);
+				if(local_max_trp > task.request_rate){
+					proceed_to_residue = true;
+					break; 
+				}
+				TaskPtr temp_task_ptr = createNewTaskPtr(task.id,task.request_rate,task.SLO,max_batch,local_max_trp);
+				// CHECK MEM BW 
+#ifdef CHECK_NETBW
+				if(_NLC.adjustBatchSizetoNetBW(temp_task_ptr,decision.vGPUList[temp_node_ptr->id])){
+					return EXIT_FAILURE;
+				}
+#endif
+
+
+#ifdef SCALE_DEBUG
+				std::cout << __func__ << "(saturate): checking memory for " << task.id << " on " << temp_node_ptr->id << std::endl;
+#endif
+				if(!doesFitMemLimit(decision.vGPUList[temp_node_ptr->id],task.id,temp_node_ptr)){
+#ifdef SCHED_DEBUG
+					std::cout << "Mem check failed!"<<std::endl;
+#endif
+				}
+				else{
+					temp_node_ptr->occupancy=1;
+					temp_node_ptr->vTaskList.push_back(temp_task_ptr);
+					temp_node_ptr->duty_cycle = getLatency(temp_node_ptr->type,task.id,max_batch,temp_node_ptr,decision);
+					// and then check if this is OK
+					bool revert=checkNeedtoRevert(temp_node_ptr, task,decision);
+					// revert decision if not OK
+					if(revert ){
+						revertNode(temp_node_ptr,task,decision);
+					}
+					else{
+						task.request_rate -= temp_task_ptr->throughput;
+#ifdef CHECK_MEM
+						addGPUMemUsage(decision.vGPUList[temp_node_ptr->id],task.id, temp_node_ptr);
+#endif 
+#ifdef SCHED_DEBUG
+						printf("[readjust] allocatd saturate node to [%d,%d,%d], remaining rate: %d \n", temp_node_ptr->id, temp_node_ptr->resource_pntg, temp_node_ptr->dedup_num,task.request_rate);
+#endif
+					}
+				}
+				auto it = find(given.begin(), given.end(),temp_node_ptr);
+				//given.erase(given.begin(),given.begin()+1); // delete front node
+				given.erase(it); // delete front node
+			} // while loop
+
+			if(proceed_to_residue){
+				while(task.request_rate > TRP_SLACK){
+					if(given.empty()) break;
+				//NodePtr temp_node_ptr = given.front();
+					std::string type_to_prioritize;
+					NodePtr temp_node_ptr;
+					if(checkTypePriority(type_to_prioritize)){
+						bool successful=false;
+						// 2. if so find the node with prioritized type, if there are no more nodes just chose front 
+						if(getNodewithPriorityType(task,type_to_prioritize,temp_node_ptr,given)){
+							temp_node_ptr=given.front();
+						}
+					} 
+					// 3. if not, return the node which yields minimum partiton su,
+					else{
+						getMinPartSum(task,type_to_prioritize,getMaxPartSize(decision));
+						if(getNodewithPriorityType(task,type_to_prioritize,temp_node_ptr,given)){
+							temp_node_ptr=given.front();
+						}
+					}
+
+					if(temp_node_ptr->resource_pntg == 100 && _usePart && _useRepartition){
+						std::vector<NodePtr> candidates;
+						const float  MAX_PART = getMaxPartSize(decision);
+						estimateTrp(temp_node_ptr->type,task,task.request_rate,candidates,MAX_PART);
+						assert(!candidates.empty());
+						int max_part = candidates[0]->resource_pntg;
+						assert(candidates[0]->vTaskList.size() ==1);
+						int temp_batch=candidates[0]->vTaskList[0]->batch_size;
+#ifdef SCHED_DEBUG
+						std::cout << "[readjust] Splitting node into " << max_part << " and " << 100-max_part << std::endl;
+#endif
+						if(max_part < 100){
+							printResults(decision);
+							temp_node_ptr->resource_pntg=max_part;
+							NodePtr new_node_ptr = makeEmptyNode(temp_node_ptr->id,100-max_part,temp_node_ptr->type);
+							if(max_part == 50) new_node_ptr->dedup_num=1;
+							decision.vGPUList[temp_node_ptr->id]->vNodeList.push_back(new_node_ptr);
+							// also add to given resources for this task
+							given.push_back(new_node_ptr);
+							sort(given.begin()+1, given.end(),cmp_nodeptr_dsc);
+						}
+					}
+
+
+
+					int max_pntg = temp_node_ptr->resource_pntg;
+#ifdef SCHED_DEBUG
+					std::cout << __func__ << ": proceed_to_residue, task.id: "<< task.id << " request_rate " << task.request_rate << " additional_rate" << task.additional_rate << std::endl; 
+#endif
+					max_batch=getMaxBatch(task,temp_node_ptr,decision,task.request_rate,true,true);
+					if(!max_batch) return EXIT_FAILURE;
+					temp_node_ptr->duty_cycle =  max_batch * (1000.0  / task.request_rate);
+					float local_max_trp = (1000.0*max_batch) / temp_node_ptr->duty_cycle;
+					TaskPtr temp_task_ptr = createNewTaskPtr(task.id,task.request_rate,task.SLO,max_batch,local_max_trp);
+					// CHECK MEM BW 
+#ifdef CHECK_NETBW
+					if(_NLC.adjustBatchSizetoNetBW(temp_task_ptr,decision.vGPUList[temp_node_ptr->id])){
+						return EXIT_FAILURE;
+					}       
+#endif
+					float latency = getLatency(temp_node_ptr->type,task.id,temp_task_ptr->batch_size,temp_node_ptr,decision);
+					temp_node_ptr->occupancy=latency / temp_node_ptr->duty_cycle;
+#ifdef SCALE_DEBUG
+					std::cout << __func__ << "(residue): checking memory for " << task.id << " on " << temp_node_ptr->id << std::endl;
+#endif
+					if(!doesFitMemLimit(decision.vGPUList[temp_node_ptr->id],task.id,temp_node_ptr)){
+#ifdef SCHED_DEBUG
+						std::cout << "Mem check failed!"<<std::endl;
+#endif
+					}
+					else{
+
+						temp_node_ptr->vTaskList.push_back(temp_task_ptr);
+
+						// check if this is OK
+						bool revert= checkNeedtoRevert(temp_node_ptr,task,decision);
+						// revert decision if not OK
+						if(revert){
+							revertNode(temp_node_ptr,task,decision);
+						}
+						else{
+							task.request_rate = (task.request_rate >= temp_task_ptr->throughput) ? task.request_rate - temp_task_ptr->throughput : 0;
+#ifdef CHECK_MEM
+							addGPUMemUsage(decision.vGPUList[temp_node_ptr->id],task.id,temp_node_ptr);
+#endif
+#ifdef SCHED_DEBUG
+							printf("[readjust] allocatd residue node, remaining rate: %d \n", task.request_rate);
+#endif
+						} // if not revert
+					}// check mem limit
+					auto it = find(given.begin(), given.end(),temp_node_ptr);
+					given.erase(it); // delete one node
+				} // while task.reqeuest_rate 
+
+			} // if (proceed_to_residue)
+
+			if(task.request_rate > TRP_SLACK) return EXIT_FAILURE;
+			else return EXIT_SUCCESS;
+		}
 
 
 
