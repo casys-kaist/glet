@@ -153,7 +153,8 @@ namespace Scheduling{
 	}
 
 // stores value for saturating throughput of each available partition
-	void IncrementalScheduler::initSaturateTrp(Task &task){
+	void IncrementalScheduler::initSaturateTrp(Task &task)
+	{
 #ifdef SCHED_DEBUG
 		std::cout << "[initSaturateTrp] Called for task  " << task.id << std::endl;
 #endif
@@ -559,7 +560,7 @@ bool IncrementalScheduler::addModeltoSchedule(Task &task, SimState &decision){
 		return EXIT_SUCCESS;
 	}
 
-void IncrementalScheduler::getEstimateTrpST(std::string device, const Task &task, int rate, std::vector<NodePtr> &output_vec, const int MAX_PART)
+	void IncrementalScheduler::getEstimateTrpST(std::string device, const Task &task, int rate, std::vector<NodePtr> &output_vec, const int MAX_PART)
 		{
 			int _rate = rate;
 			std::vector<int> parts = _availParts;
@@ -621,16 +622,60 @@ void IncrementalScheduler::getEstimateTrpST(std::string device, const Task &task
 		return trp;
 	}
 
-		void IncrementalScheduler::setupNetworkChecker(std::string json_file){
+	void IncrementalScheduler::setupNetworkChecker(std::string json_file){
 			if(_NLC.setupPerTaskInputDimension(json_file)){
 				_isNLCInitated=false;
 			}
 			else _isNLCInitated=true;
+	}
+
+	bool IncrementalScheduler::inspectNetworkBW(SimState &input){
+			return _NLC.isBandwidthOK(input);
+	}
+
+	int IncrementalScheduler::getMaxReturnPart(const Task& task, std::string device){
+#ifdef SCHED_DEBUG
+			std::cout << "[getMaxReturnPart] received model id: " << task.id << std::endl; 
+#endif 
+			std::map<int,float> per_part_trp;
+			int dummy;
+			// get throughput of every possible partition
+			assert(_availParts.size()>=1);
+			if(_availParts.size() == 1) return *_availParts.begin();
+			for(auto part : _availParts){
+				per_part_trp[part]=getMaxSaturateTrp(task,dummy,part,device);
+			}
+			const float MIN_THRESHOLD=1.05;\
+						  uint len = _availParts.size();
+			float max_ret = 0;
+			int max_part = _availParts[len-1];
+#ifdef SCHED_DEBUG
+			std::cout << "max_part initated to " << per_part_trp.end()->first << std::endl;  
+#endif
+			for(int i=len-1; i > 1; i--){
+				int low_part=_availParts[i];
+				int high_part=_availParts[i-1];
+				float low_trp=per_part_trp[low_part];
+				float high_trp=per_part_trp[high_part];
+
+#ifdef SCHED_DEBUG
+				//std::cout << "low_part: "<< low_part << " high_part: "<< high_part << " low_trp: "<< low_trp << " high_trp: " << high_trp<<endl;
+#endif 
+
+				if(high_trp/low_trp < MIN_THRESHOLD) continue;
+				float ret = (high_trp-low_trp)/(high_part-low_part);
+				if( ret > max_ret){
+					max_ret=ret;
+					max_part=high_part;
+				} 
+			}
+#ifdef SCHED_DEBUG
+			std::cout << "[getMaxReturnPart] returning max part:  " << max_part<< std::endl; 
+#endif 
+
+			return max_part;
 		}
 
-		bool IncrementalScheduler::inspectNetworkBW(SimState &input){
-			return _NLC.isBandwidthOK(input);
-		}
 
 
 } // namespace:Scheduling
