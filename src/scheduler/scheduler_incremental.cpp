@@ -794,6 +794,36 @@ int IncrementalScheduler::getMinPart(std::string device, Task task, const NodePt
 #endif 
 			return EXIT_SUCCESS;
 		}
+bool IncrementalScheduler::doesFitMemLimit(GPUPtr &gpu_ptr, int model_id, NodePtr &node_ptr){
+			assert(_mapModelIDtoMemSize[model_id] !=0);
+			assert(gpu_ptr->TOTAL_MEMORY);
+			int additional_memory=0;
+			// if model is already loaded, part is also loaded no need to even check
+			if(isModelLoaded(gpu_ptr, node_ptr, model_id)) return true;
+			if(!isPartLoaded(gpu_ptr,node_ptr)){
+				additional_memory=_DEFAULT_PYTORCH_MEM_USAGE;
+			}
+			bool result= ((gpu_ptr->TOTAL_MEMORY)*_MEM_ROOM - gpu_ptr->used_memory) > _mapModelIDtoMemSize[model_id] + additional_memory; 
+
+#ifdef SCHED_DEBUG
+			std::cout << __func__ << "called for gpu: " << gpu_ptr->GPUID << " searching for " << node_ptr->resource_pntg <<std::endl;
+			std::cout << __func__ << ": comparing left memory: " << gpu_ptr->TOTAL_MEMORY*_MEM_ROOM - gpu_ptr->used_memory << " and model_mem: "<< _mapModelIDtoMemSize[model_id] << std::endl;
+			std::cout << __func__ << ": with addtional " << additional_memory << std::endl; 
+#endif
+
+#ifdef SCALE_DEBUG
+			if(!result){
+				std::cout << __func__ << ": task id " << model_id << " DOES NOT fit on GPU " << gpu_ptr->GPUID
+					<<std::endl;
+			}
+			else{
+				std::cout << __func__ << ": task id " << model_id << " DOES fit on GPU " << gpu_ptr->GPUID
+					<<std::endl;
+			}
+
+#endif
+			return result;
+		}
 
 
 
