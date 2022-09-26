@@ -338,6 +338,154 @@ bool IncrementalScheduler::addModeltoSchedule(Task &task, SimState &decision){
 			} 
 			return EXIT_SUCCESS;
 		}
+	// Time shares nodes, if ts_node_list is not empty this function will only consider nodes that are in the vector
+	bool IncrementalScheduler::allocateTimeShare(Task &task, SimState &sim, std::vector<NodePtr> &ts_node_list){
+#ifdef SCHED_DEBUG
+		printf("[allocateTimeShare] called for task id: %d , rate: %d \n",task.id, task.request_rate );
+#endif
+		bool checkfirst=true;
+		if(ts_node_list.empty()) checkfirst=false;
+		std::vector<NodePtr> candidates;
+		for(auto gpu_ptr : sim.vGPUList){
+			//check whether there is room for task in GPU first
+			for(auto node_ptr : gpu_ptr->vNodeList)
+			{
+#ifdef CHECK_MEM
+				if(!doesFitMemLimit(gpu_ptr,task.id,node_ptr)) continue;
+#endif
+				if(checkfirst){ // search for node in ts_node_list and add pointer if and only if the node is in list
+					bool found = false;
+					for(auto node_ptr2 : ts_node_list){
+						if(node_ptr->id == node_ptr2->id && node_ptr->dedup_num == node_ptr2->dedup_num && node_ptr->resource_pntg == node_ptr2->resource_pntg){
+							found=true;
+							break;
+						}
+					}
+					if(found) candidates.push_back(node_ptr);
+				}
+				else{
+					if(node_ptr->occupancy < 1 && node_ptr->vTaskList.size() < _numMaxModel) candidates.push_back(node_ptr);
+				}
+			}
+		}
+
+		sort(candidates.begin(), candidates.end(), cmp_nodeptr_occu_dsc);
+		while(task.request_rate + task.additional_rate> TRP_SLACK){
+			bool found = false;
+			for(auto node_ptr : candidates)
+			{
+				if(checkContain(task.id, node_ptr)) continue;
+				if(node_ptr->occupancy >= 1.0) continue;
+#ifdef SCHED_DEBUG
+				printf("[allocateTimeShare] occupancy: %lf \n" , node_ptr->occupancy);
+#endif
+				int max_batch = int((node_ptr->duty_cycle) * (task.request_rate / 1000.0));
+#ifdef SCHED_DEBUG
+				printf("[allocateTimeShare] max batch: %d for duty cycle: %lf, rate: %d \n", max_batch,node_ptr->duty_cycle, task.request_rate);
+#endif 
+				if(max_batch==0) continue;
+
+				int local_batch_size;
+				int duty_cycle;
+				float latency;
+				//get possible maximum batch size, (which leads to maximum througput)
+				if(max_batch > _MAX_BATCH) max_batch=_MAX_BATCH;
+				for(local_batch_size = max_batch; local_batch_size > 0; --local_batch_size){
+					duty_cycle = local_batch_size * 1000.0  / (task.request_rate);
+					latency = getLatency(node_ptr->type,task.id,local_batch_size,node_ptr, sim);
+					if(duty_cycle + latency < task.SLO && (latency / duty_cycle) < (1.0 - node_ptr->occupancy)){
+						break;
+					}
+
+				}
+				if(duty_cycle > node_ptr->duty_cycle) continue;
+				if(local_batch_size==0) continue;
+
+#ifdef SCHED_DEBUG
+				printf("[allocateTimeShare] duty cycle before: %lf, after : %d, batch_size: %d \n", node_ptr->duty_cycle, duty_cycle, local_batch_size);
+				printf("[AllocateTineShare] latency: %lf ms , occupancy: %lf \n", latency,latency/duty_cycle);
+#endif
+
+				std::vector<int> SLOs;
+				float latency_sum=0;
+				bool skip=false;
+				//first gather latency and SLO of new task
+				latency_sum += latency;
+				SLOs.push_back(task.SLO);
+#ifdef SCHED_DEBUG
+				printf("[allocateTimeShare] latency_sum: %lf, duty_cycle : %d, batch size: %d \n",latency_sum,duty_cycle, local_batch_size);
+#endif
+				// then gather latency and SLO of old tasks 
+				for(auto task_ptr : node_ptr->vTaskList){
+					int batch_size = int(duty_cycle / (1000.0 / task_ptr->request_rate));
+					if(batch_size==0) batch_size=1;
+					latency_sum += getLatency(node_ptr->type,task_ptr->id, batch_size, node_ptr, sim);
+					SLOs.push_back(task_ptr->SLO);
+#ifdef SCHED_DEBUG
+					printf("[allocateTimeShare] latency_sum: %lf, duty_cycle : %d, batch_size: %d \n",latency_sum,duty_cycle, batch_size);
+#endif
+				}
+				if(latency_sum / duty_cycle > 1.0) continue;
+				latency_sum+=duty_cycle;
+				for(auto slo : SLOs)
+				{
+					if(latency_sum > slo) {
+						skip=true;
+#ifdef SCHED_DEBUG
+						printf("[AllocateTineShare] latency sum %lf exceeded slo: %d \n", latency_sum, slo);
+#endif
+					}
+				}
+				
+				if(skip) continue;
+				//update node
+				max_batch=local_batch_size;
+				float local_throughput = max_batch * (1000.0 / duty_cycle);
+				node_ptr->vTaskList.push_back(createNewTaskPtr(task.id,task.request_rate,task.SLO,max_batch,local_throughput));
+				// update remaining request rate left for task
+				task.request_rate =  (task.request_rate - local_throughput >0)  ? task.request_rate - local_throughput : 0;
+#ifdef CHECK_MEM
+				addGPUMemUsage(sim.vGPUList[node_ptr->id],task.id,node_ptr);
+#endif
+				float new_occupancy=0.0;
+				for(auto task_ptr : node_ptr->vTaskList){
+					if(task_ptr->id == task.id){
+						new_occupancy += getLatency(node_ptr->type,task_ptr->id,task_ptr->batch_size,node_ptr,sim) / duty_cycle;
+#ifdef SCHED_DEBUG
+						printf("[allocateTimeShare] new_occupancy: %lf , after adding %d \n",new_occupancy, task_ptr->id); 
+#endif
+					}
+					else{
+						task_ptr->batch_size = int(duty_cycle / (1000.0 / task_ptr->request_rate));
+						if(task_ptr->batch_size==0) task_ptr->batch_size=1;
+						if(task_ptr->batch_size>_MAX_BATCH) task_ptr->batch_size=_MAX_BATCH;
+						task_ptr->throughput = (task_ptr->batch_size * 1000.0) / duty_cycle;
+						new_occupancy += getLatency(node_ptr->type,task_ptr->id, task_ptr->batch_size, node_ptr,sim) / duty_cycle;
+#ifdef SCHED_DEBUG
+						printf("[allocateTimeShare] new_occupancy: %lf , after adding %d \n",new_occupancy, task_ptr->id); 
+#endif
+					}
+				}
+				node_ptr->duty_cycle=duty_cycle;
+				node_ptr->occupancy=new_occupancy;
+				found=true;
+#ifdef SCHED_DEBUG
+				node_ptr->id;
+				printf("[AllocateTineShare] SUCCESS task : %d allocated to [%d,%d,%d] with trp: %lf, ending occupancy: %lf \n", task.id, \
+						node_ptr->id, node_ptr->resource_pntg, node_ptr->dedup_num,\
+						local_throughput,\
+						node_ptr->occupancy);
+#endif
+				break;
+			} // for: candidates
+			if(!found) return EXIT_FAILURE; // faied to allocate with time sharing 
+#ifdef SCHED_DEBUG
+			printf("[allocateTimeShare] remaining rate: %d \n",task.request_rate);
+#endif
+		} // tsak.request_rate  
+		return EXIT_SUCCESS;
+	}
+
 
 
 
