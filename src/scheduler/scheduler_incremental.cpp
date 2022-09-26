@@ -560,6 +560,20 @@ bool IncrementalScheduler::addModeltoSchedule(Task &task, SimState &decision){
 		return EXIT_SUCCESS;
 	}
 
+	void IncrementalScheduler::getEstimate(Task &task, std::vector<NodePtr> &output_vec, const int MAX_PART){
+#ifdef SCHED_DEBUG
+			std::cout << "[getEstimate] function called for task id : " << task.id<< "rate: " << task.request_rate<< std::endl;
+			std::cout << "[getEstimate] max_part : " << MAX_PART<< std::endl;
+#endif
+			std::string most_cost_effective_type;
+			getMinPartSum(task,most_cost_effective_type,MAX_PART);
+			//getOneFirst(task,_most_cost_effective_type,MAX_PART);
+			output_vec.clear();
+			estimateTrp(most_cost_effective_type, task,task.request_rate,output_vec, MAX_PART);
+	}
+
+
+
 	void IncrementalScheduler::getEstimateTrpST(std::string device, const Task &task, int rate, std::vector<NodePtr> &output_vec, const int MAX_PART)
 		{
 			int _rate = rate;
@@ -1047,6 +1061,131 @@ int IncrementalScheduler::getMinPart(std::string device, Task task, const NodePt
 			else return EXIT_SUCCESS;
 		}
 
+	bool IncrementalScheduler::checkFit(std::vector<NodePtr> &candidate_nodes, SimState &decision){
+			//check how much is required
+			int required_pntg=0;
+#ifdef SCHED_DEBUG
+			printf("[checkFit] Recieved type %s %lu nodes for checking \n", candidate_nodes[0]->type.c_str(),candidate_nodes.size());
+			printf("[ ");
+			for(auto input_ptr : candidate_nodes){
+				printf("%d",input_ptr->resource_pntg );
+				printf(", ");
+			}
+			printf("]\n");
+
+#endif
+			std::vector<NodePtr> flagged;
+			std::map<NodePtr, int> remain_pntg;
+
+			for(auto input_ptr : candidate_nodes){
+				NodePtr result;
+#ifdef SCHED_DEBUG
+				printf("[checkFit] checking for part: %d \n", input_ptr->resource_pntg);
+#endif
+
+				while(true){
+					if(findBestFit(decision,input_ptr, flagged, result)){
+#ifdef SCHED_DEBUG
+						printf("[checkFit] FAILED \n");
+#endif
+
+						return EXIT_FAILURE;
+					}
+					if(remain_pntg.find(result) == remain_pntg.end()) // not in map
+					{
+						remain_pntg[result]=result->resource_pntg;
+					}
+					// the following case happens because BestFit does not consider tasks that were previously scheduled
+					if(remain_pntg[result] < input_ptr->resource_pntg){
+						flagged.push_back(result);
+					}
+					else break;
+				}
+
+				if(_useRepartition && remain_pntg[result]==100)
+					remain_pntg[result]-=input_ptr->resource_pntg;
+				else
+					remain_pntg[result]=0;
+
+				if (remain_pntg[result] == 0)
+					flagged.push_back(result);
+			}
+#ifdef SCHED_DEBUG
+			printf("[checkFit] SUCCEEDED \n");
+#endif
+			return EXIT_SUCCESS;
+	}
+
+	bool IncrementalScheduler::findBestFit(SimState &input_sim,NodePtr &input,std::vector<NodePtr> &exclude_vec,NodePtr &output){
+			int min_diff = 200;
+			NodePtr min_ptr;
+			std::string type = input->type;
+			for (auto gpu_ptr : input_sim.vGPUList)
+			{
+				if (gpu_ptr->TYPE != type)
+					continue;
+				for (auto node_ptr : gpu_ptr->vNodeList)
+				{
+					if (node_ptr->resource_pntg < input->resource_pntg || !node_ptr->vTaskList.empty())
+						continue;
+					std::vector<NodePtr>::iterator fit = find(exclude_vec.begin(), exclude_vec.end(), node_ptr);
+					if (fit != exclude_vec.end())
+						continue;
+					bool skip = false;
+					assert(input->vTaskList.size() == 1);
+					TaskPtr task_ptr = input->vTaskList[0];
+					// checkwhether memory is OK 
+#ifdef CHECK_MEM
+#ifdef SCALE_DEBUG
+					std::cout << __func__ << ": checking memory for " << task_ptr->id << " on " << node_ptr->id << std::endl;
+#endif
+
+					if(!doesFitMemLimit(gpu_ptr,task_ptr->id, node_ptr)) 
+					{
+#ifdef SCHED_DEBUG
+						std::cout << __func__ << ": failed mem check" << std::endl;
+#endif
+						skip=true;
+					}
+#endif
+					// check whether interferences will be OK
+					// check for input node
+					float latency = getLatency(type,task_ptr->id,task_ptr->batch_size,node_ptr, input_sim);
+					if(latency + input->duty_cycle > task_ptr->SLO ){
+#ifdef SCHED_DEBUG
+						std::cout << __func__ << ": failed SLO check" << std::endl;
+#endif
+						skip=true;
+					} 
+					// check for neighboring node
+					if(!skip) skip=checkForInterference(type,input,node_ptr,input_sim);       
+#ifdef SCHED_DEBUG
+					if(skip) std::cout << __func__ <<": failed interference check"<<std::endl;
+#endif
+					if(skip) continue;
+
+					// chose 100% nodes first 
+					// check if the node is a 100% node, and partitoining is available
+#ifdef SCHED_DEBUG
+					std::cout << __func__ << ": comparing: "<< input->resource_pntg << " with node: " << node_ptr->resource_pntg
+						<<std::endl;
+#endif
+
+					if(node_ptr->resource_pntg == 100 && (getUseParts() == true)){
+						min_diff=0;
+						min_ptr=node_ptr;
+					}    
+					if(min_diff >= node_ptr->resource_pntg - input->resource_pntg){
+						min_diff = node_ptr->resource_pntg - input->resource_pntg;
+						min_ptr=node_ptr;
+					}
+
+				}
+			}
+			if(min_diff == 200) return EXIT_FAILURE;
+			output=min_ptr;
+			return EXIT_SUCCESS;
+	}
 
 
 } // namespace:Scheduling
