@@ -1340,6 +1340,28 @@ int IncrementalScheduler::getMinPart(std::string device, Task task, const NodePt
 			std::cout << "[getMinPartSum] minpart output type: " << output << std::endl;
 #endif 
 		}
+bool IncrementalScheduler::checkTypePriority(std::string &output_type){
+			if(_priorityCheck){
+				output_type=_priorityType;
+				return true;
+			}
+			else return false;
+		}
 
+
+		// if successful, stores node_ptr in output_node_ptr, and returns sucess
+		// if not, retunrs unsuccessful
+		int IncrementalScheduler::getNodewithPriorityType(Task &task, std::string type, NodePtr &output_node_ptr, std::vector<NodePtr> given_vector){
+			assert(!given_vector.empty());
+			int ideal_size = getMaxReturnPart(task,type);
+			for(auto nodeptr : given_vector){
+				if(nodeptr->type == type){
+					output_node_ptr = nodeptr;
+					return EXIT_SUCCESS;
+				}
+			}
+			// if none was successful, just return fail
+			return EXIT_FAILURE;
+		}
 
 } // namespace:Scheduling
