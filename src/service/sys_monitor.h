@@ -26,6 +26,7 @@
 #include "load_balancer.h"
 #include "backend_proxy_ctrl.h"
 
+class AppSpec;
 enum scheduler {MPS_STATIC, ORACLE};
 
 typedef struct _TaskSpec{
@@ -42,25 +43,31 @@ typedef struct _load_args{
 	std::vector<std::pair<int,int>> model_ids_batches;
 } load_args;
 
-
 class SysMonitor{
 	public:
 		SysMonitor();
 		~SysMonitor();
+		// newley added method
+		// 1. setupProxy: setsup maps, vectors for proxy
 		void setupProxy(proxy_info* pPInfo);
+
 
 		std::map<std::string, std::queue<std::shared_ptr<request>>>* getReqListHashTable();
 		std::queue<std::shared_ptr<request>>* getRequestQueueofNet(std::string str_req_name);
 		bool isQueueforNet(std::string str_req_name);
 		void addNewQueueforNet(std::string str_req_name);
+		// returns names of network that has a queue
 		std::vector<std::string>* getVectorOfNetNames();
 		uint32_t getLenofReqQueue(std::string str_req_name);
-		moodycamel::ConcurrentQueue<std::shared_ptr<request>>* getCompQueue();
-		std::deque<std::shared_ptr<TaskSpec>>* getBatchQueueofProxy(proxy_info* pPInfo);
 
+		moodycamel::ConcurrentQueue<std::shared_ptr<request>>* getCompQueue();
+
+		//std::map<proxy_info *, std::deque<std::shared_ptr<TaskSpec>> *>* getPerProxyBatchList();
+
+		std::deque<std::shared_ptr<TaskSpec>>* getBatchQueueofProxy(proxy_info* pPInfo);
 		void insertToBatchQueueofProxy(proxy_info* pPInfo, std::shared_ptr<TaskSpec> task_spec);
 		uint32_t getSizeofBatchQueueofProxy(proxy_info *pPInfo);
-		
+
 		std::vector<std::pair<std::string, int>>* getProxyNetList(proxy_info* pPInfo);
 		uint32_t getProxyNetListSize(proxy_info* pPInfo);
 		void insertNetToProxyNetList(proxy_info* pPInfo, std::pair<std::string, int>& pair);
@@ -87,6 +94,10 @@ class SysMonitor{
 		void setNumProxyPerGPU(int n_proxy_per_gpu);
 		int getNumProxyPerGPU();
 
+
+		// used in backend, index conversion table from frontend view of ID, to actual GPU ID in host
+		std::map<int, int>* getLocalIDToHostIDTable();
+
 		void setFlagTrackInterval(bool val);
 		bool isTrackInterval();
 
@@ -98,12 +109,11 @@ class SysMonitor{
 
 		std::vector<AppSpec> *getAppSpecVec();
 
-		// used in backend, index conversion table from frontend view of ID, to actual GPU ID in host
-		std::map<int, int>* getLocalIDToHostIDTable();
 
 		proxy_info* findProxy(int dev_id, int resource_pntg, int dedup_num);
 		proxy_info* findProxy(int dev_id, int partition_num);
-
+	
+		
 	private:
 		std::map<std::string, std::queue<std::shared_ptr<request>>> ReqListHashTable; // per request type queue
 		std::vector<std::string> _netNames;
@@ -129,4 +139,9 @@ class SysMonitor{
 		bool _SYS_FLUSH;
 };
 
+
+typedef struct _reroute_args{
+	SysMonitor *SysState;
+	GPUPtr gpu_ptr;
+} reroute_args;
 #endif 
