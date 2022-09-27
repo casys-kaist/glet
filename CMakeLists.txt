@@ -99,3 +99,18 @@ add_executable(standalone_scheduler src/standalone_scheduler.cpp
                 )
 target_link_libraries(standalone_scheduler boost_program_options  boost_system)
 set_property(TARGET standalone_scheduler PROPERTY CXX_STANDARD 14)
+
+#---------backend---------
+add_executable(backend src/backend.cpp ${COMMON_SRCS}  ${SCHEDULER_SRCS}
+        src/service/app_thread.cpp
+        src/service/backend_thread.cpp
+        src/service/app_instance.cpp
+        src/service/app_spec.cpp
+        src/service/backend_control.cpp
+        src/service/backend_data.cpp
+        src/service/input.cpp
+        src/service/proxy_ctrl.cpp
+        src/service/sys_monitor.cpp
+        )
+target_link_libraries(backend "${TORCH_LIBRARIES}" ${OpenCV_LIBS} boost_program_options  boost_system nvidia-ml)
+set_property(TARGET backend PROPERTY CXX_STANDARD 14)
