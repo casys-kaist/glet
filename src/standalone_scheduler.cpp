@@ -143,5 +143,18 @@ int main(int argc, char* argv[])
 	}
 	best_sim = sim_list[0];
 	printResults(best_sim);
+	//filters out scheduling attempts that requires too much bandwidth, defined in network_limit.h
+#ifdef CHECK_NETBW
+	/*
+	   if(!SBP.inspectNetworkBW(best_sim)){
+	   printf("Failed Network Capacity Test \n");
+	   FILE *r = fopen(output_file.c_str(), "w");
+	   fprintf(r,"EMPTY");
+	   return 0;
+	   }
+	   */
+#endif
+	writeSchedulingResults(output_file,&best_sim,SBP);
+	return 0;
 
 }
