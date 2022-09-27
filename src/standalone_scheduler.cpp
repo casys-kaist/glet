@@ -84,4 +84,64 @@ int main(int argc, char* argv[])
 	//vector<int> per_dev_used_mem = {5219, 6909,7877,9193};
 	//vector<int> per_dev_used_mem = {5222};
 	//SBP.UpdateDevMemUsage(per_dev_used_mem, simulator);
+	for (auto task : task_list)
+	{
+		SBP.initSaturateTrp(task);
+	}
+	uint64_t sbp_start = getCurNs();
+	if(!vm["full_search"].as<bool>()){
+		if (!SBP.runScheduling(&task_list, simulator, final_output,true))
+		{
+			sim_list.push_back(final_output);
+			std::cout << "[main] Success" << std::endl;
+		}
+		else{
+			std::cout <<"[main] failed "<< std::endl;
+		}
+
+		if(sim_list.empty()){
+			printf("Received EMPTY list \n");
+			FILE *r = fopen(output_file.c_str(), "w");
+			fprintf(r,"EMPTY");
+			return 1;
+		}
+	}
+	else{
+		//exhaustively search for best case
+		std::vector<std::vector<Node>> possible_cases;
+		fillPossibleCases2(&possible_cases, SBP.getMaxGPUs()); 
+
+		for(auto vec : possible_cases){
+			SimState input,output;
+			task_list.clear();
+			SBP.setupTasks(vm["task_config"].as<std::string>(),&task_list);
+			SBP.resetScheduler(input,vec);
+			SBP.initDevMems(input);
+#ifdef SCHED_DEBUG
+			printf("input to be scheduled : \n");
+			printResults(input);
+#endif
+			if(!SBP.runScheduling(&task_list, input,output,false)){
+				std::cout<< "[main] Success" << std::endl;
+				sim_list.push_back(output);
+				printResults(output);
+				break;
+			}
+			else{
+				std::cout <<"[main] failed "<< std::endl;
+			}
+
+		} // for each possible case   
+	}
+	uint64_t sbp_end=getCurNs();
+	printf("computation time(ms): %lf \n",double(sbp_end - sbp_start)/1000000);
+	if(sim_list.empty()){
+		printf("Received EMPTY list \n");
+		FILE *r = fopen(output_file.c_str(), "w");
+		fprintf(r,"EMPTY");
+		return 0;
+	}
+	best_sim = sim_list[0];
+	printResults(best_sim);
+
 }
