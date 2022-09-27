@@ -8,6 +8,7 @@
 #include "boost/program_options.hpp"
 #include "scheduler_incremental.h"
 #include "scheduler_utils.h"
+#include "common_utils.h"
 
 namespace po = boost::program_options;
 

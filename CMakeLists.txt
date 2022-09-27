@@ -95,6 +95,7 @@ add_executable(standalone_scheduler src/standalone_scheduler.cpp
                 src/common/scheduler_utils.cpp
                 src/common/jsoncpp.cpp
                 src/common/config.cpp
+		src/common/common_utils.cpp
                 )
 target_link_libraries(standalone_scheduler boost_program_options  boost_system)
 set_property(TARGET standalone_scheduler PROPERTY CXX_STANDARD 14)
