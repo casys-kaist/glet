@@ -76,4 +76,12 @@ int main(int argc, char* argv[])
 	SimState best_sim;
 	SBP.setupTasks(vm["task_config"].as<std::string>(), &task_list);
 	std::vector<int> per_dev_mem;
+	// device memory is initiated by SBP
+	SBP.initiateDevs(simulator,SBP.getMaxGPUs());
+	SBP.initDevMems(simulator);
+
+	// below is for debugging memory usage and related functions
+	//vector<int> per_dev_used_mem = {5219, 6909,7877,9193};
+	//vector<int> per_dev_used_mem = {5222};
+	//SBP.UpdateDevMemUsage(per_dev_used_mem, simulator);
 }
