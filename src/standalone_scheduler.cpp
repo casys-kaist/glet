@@ -37,7 +37,35 @@ po::variables_map parse_opts(int ac, char** av) {
 }
 
 
+//this function returns all possible combinations
+void ReturnNodeList(std::vector<std::vector<Node>> *comb, std::vector<int> &availpart,std::vector<Node> temp ,int gpuid){
+	if (gpuid ==0){
+		comb->push_back(temp);
+		return;
+	}    
+	for(std::vector<int>::iterator it1 = availpart.begin(); it1 != availpart.end(); it1++){
+		int a1 = *it1;
+		int b1 = 100 -a1;          
+		Node t1,t2;
+		t1.resource_pntg=a1;
+		t2.resource_pntg=b1;
+		t1.id = gpuid;
+		t2.id = gpuid;
+		t1.dedup_num=0;
+		if(t1.resource_pntg == t2.resource_pntg) t2.dedup_num=1;
+		else t2.dedup_num=0;
+		if(t1.resource_pntg != 0 ) temp.push_back(t1);
+		if(t2.resource_pntg != 0 ) temp.push_back(t2);            
+		ReturnNodeList(comb,availpart,temp,gpuid-1);
+		if(t1.resource_pntg != 0 ) temp.pop_back();
+		if(t2.resource_pntg != 0 ) temp.pop_back();
+	}    
+}
+
+
 void fillPossibleCases2(std::vector<std::vector<Node>> *pVec, int ngpu){
+	std::vector<Node> temp;
+	ReturnNodeList(pVec,AVAIL_PARTS,temp,ngpu);
 }
 
 void writeSchedulingResults(std::string filename, SimState *simulator, Scheduling::BaseScheduler &sched){
