@@ -69,6 +69,37 @@ void fillPossibleCases2(std::vector<std::vector<Node>> *pVec, int ngpu){
 }
 
 void writeSchedulingResults(std::string filename, SimState *simulator, Scheduling::BaseScheduler &sched){
+	ProxyPartitionWriter ppw = ProxyPartitionWriter(filename, simulator->vGPUList.size());
+	for(unsigned int i =0; i< simulator->vGPUList.size(); i++){
+		for(auto it : simulator->vGPUList[i]->vNodeList){
+
+			if(it->vTaskList.empty()){
+				task_config new_config;
+				new_config.node_id = it->id;
+				new_config.thread_cap = it->resource_pntg;
+				new_config.dedup_num = it->dedup_num;
+				new_config.duty_cycle= 0;
+				new_config.name="reserved";
+				new_config.batch_size=sched.getMaxBatchSize();
+				ppw.addResults(new_config);
+			}
+			else {
+				for(auto it2 : it->vTaskList){
+					task_config new_config;
+					new_config.node_id = it->id;
+					new_config.thread_cap = it->resource_pntg;
+					new_config.dedup_num = it->dedup_num;
+					new_config.duty_cycle= it->duty_cycle;
+					new_config.name=sched.getModelName(it2->id);
+					new_config.batch_size=it2->batch_size;
+					ppw.addResults(new_config);
+				}
+			}
+		}
+
+	}
+	ppw.writeResults();
+
 }
 
 int main(int argc, char* argv[])
