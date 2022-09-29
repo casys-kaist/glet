@@ -61,11 +61,12 @@ The script will use cmake to auto-configure build envrionments and build binarie
 
 **Example scripts will be added in the future**
 
-# Future Plans
+# Future Plans (*Updated 2022-09-29*)
+
 
 Below is a list of items/features that are planned to be added to this repo.
 
-- Source code of all SW components used in experimentation: standalone inference binary, standalone scheduler, request generator, backend server, frontend server and proxy server
+- Source code of all SW components used in experimentation: standalone inference binary, standalone scheduler, request generator, backend server, frontend server and proxy server (**completed**)
 
 - Scripts used for executing and analyzing experiments
 
