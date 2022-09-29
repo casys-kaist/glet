@@ -114,3 +114,31 @@ add_executable(backend src/backend.cpp ${COMMON_SRCS}  ${SCHEDULER_SRCS}
         )
 target_link_libraries(backend "${TORCH_LIBRARIES}" ${OpenCV_LIBS} boost_program_options  boost_system nvidia-ml)
 set_property(TARGET backend PROPERTY CXX_STANDARD 14)
+
+#---------frontend---------
+
+add_executable(frontend src/frontend.cpp ${COMMON_SRCS} ${SCHEDULER_SRCS}
+        src/service/app_instance.cpp
+        src/service/app_spec.cpp
+        src/service/app_thread.cpp
+        src/service/backend_delegate.cpp
+        src/service/batched_request.cpp
+        src/service/drop_thread.cpp
+        src/service/EWMA.cpp
+        src/service/input.cpp
+        src/service/monitor_thread.cpp
+        src/service/proxy_thread.cpp
+        src/service/request.cpp
+        src/service/request_thread.cpp
+        src/service/router_proxy.cpp
+        src/service/router_scheduling.cpp
+        src/service/router_setup.cpp
+        src/service/server_thread.cpp
+        src/service/backend_setup.cpp
+        src/service/backend_proxy_ctrl.cpp
+        src/service/device_spec.cpp
+        src/service/load_balancer.cpp
+        src/service/sys_monitor.cpp
+        )
+target_link_libraries(frontend "${TORCH_LIBRARIES}" ${OpenCV_LIBS} boost_program_options  boost_system nvidia-ml)
+set_property(TARGET frontend PROPERTY CXX_STANDARD 14)
