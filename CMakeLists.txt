@@ -130,9 +130,9 @@ add_executable(frontend src/frontend.cpp ${COMMON_SRCS} ${SCHEDULER_SRCS}
         src/service/proxy_thread.cpp
         src/service/request.cpp
         src/service/request_thread.cpp
-        src/service/router_proxy.cpp
-        src/service/router_scheduling.cpp
-        src/service/router_setup.cpp
+        src/service/global_scheduler_proxy.cpp
+        src/service/global_scheduler.cpp
+        src/service/global_scheduler_setup.cpp
         src/service/server_thread.cpp
         src/service/backend_setup.cpp
         src/service/backend_proxy_ctrl.cpp
