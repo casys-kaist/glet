@@ -84,6 +84,9 @@ nvprof-*
 *.tar
 *.tar.gz
 
+# torchsript model files
+*.pt
+
 # raw image data 
 *.jpg
 *.png
