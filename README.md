@@ -81,7 +81,7 @@ Use 'execLocal.sh' to execute ML inference on local GPU. Useful for testing whet
 *Highly recommended that you replace example profile files with profile info on the platform you wish to execute*
 
 
-## (TBD) Mult servers on multi nodes
+## (TBD) Multi servers for multi nodes
 
 
 
