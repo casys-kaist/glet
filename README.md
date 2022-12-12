@@ -57,18 +57,47 @@ Install the following libraries and drivers to build the prototype
 
 > ./build_all.sh
 
-The script will use cmake to auto-configure build envrionments and build binaries.
+The script will use cmake to auto-configure build environments and build binaries.
 
-**Example scripts will be added in the future**
+# Running Examples
 
-# Future Plans (*Updated 2022-09-29*)
+**More Example scripts will be added in the future**
+
+Below are step-by-step examples for running the server and standalone components
+
+## Executing inference on a single local GPU
+
+Use 'execLocal.sh' to execute ML inference on local GPU. Useful for testing whether you have installed compatible SW stack and profiling latency.
+
+1. Make sure you have downloaded models you want to execute and store them under 'resource/models/'.
+
+2. Go to 'scripts/' 
+> cd scripts
+
+3. Execute execLocal.sh with parameters: 1) name of model you want to execute, 2) number of executions 3) batch size 4) interval between executions 5) (optional) percentage of computing resource.
+> example) ./execLocal.sh resnet50 1000 1 0.1 50
+
+## (TBD) Executing offline scheduler
+*Highly recommended that you replace example profile files with profile info on the platform you wish to execute*
+
+
+## (TBD) Mult servers on multi nodes
+
+
+
+
+
+
+
+
+# Future Plans (*Updated 2022-12-12*)
 
 
 Below is a list of items/features that are planned to be added to this repo.
 
 - Source code of all SW components used in experimentation: standalone inference binary, standalone scheduler, request generator, backend server, frontend server and proxy server (**completed**)
 
-- Scripts used for executing and analyzing experiments
+- Scripts used for executing and analyzing experiments (**ongoing**)
 
 - Docker related files e.g.) Dockerfile
 
