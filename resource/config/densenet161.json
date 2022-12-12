@@ -1,0 +1,24 @@
+{
+    "Name": "densenet161",
+    "Input":[{
+            "ID":0,
+            "InputDim":[3,224,224],
+            "InputType":"FP32",
+            "output":[1]
+        }
+    ],
+    "Models":[{
+            "ID":1,
+            "input":[0],
+            "output":[2],
+             "model": "densenet161",
+            "max_batch": 32,
+             "SLO":202
+        }
+    ],
+    "Output":[{
+            "ID":2,
+            "input":[1],
+            "Comp": "None"
+    }]
+}

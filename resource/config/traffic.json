@@ -1,0 +1,43 @@
+{
+    "Name": "traffic",
+    "Input":[{
+            "ID":0,
+            "InputDim":[3,300,300],
+            "InputType":"FP32",
+            "output": [1]
+        }
+    ],
+    "Models":[
+        {
+            "ID":1,
+            "input": [0],
+            "output": [2,3],
+            "model": "ssd-mobilenetv1",
+            "max_batch": 32,
+            "SLO":69
+
+        },
+        {
+            "ID":2,
+            "input": [1],
+            "output": [4],
+            "model": "googlenet",
+            "max_batch": 32,
+            "SLO":67
+        },
+        {
+            "ID":3,
+            "input": [1],
+            "output": [4],
+            "model": "vgg16",
+            "max_batch": 32,
+            "SLO": 67
+        }
+    ],
+    "Output": [{
+            "ID":4,
+            "input":[2,3],
+            "Comp":"None"
+    }]
+
+}

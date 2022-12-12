@@ -1,0 +1,87 @@
+{
+    "Name": "game",
+    "Input":[{
+            "ID":0,
+            "InputDim":[3,224,224],
+            "InputType":"FP32",
+            "output": [8]
+        },{
+            "ID":1,
+            "InputDim":[1,28,28],
+            "InputType":"FP32",
+            "output": [2,3,4,5,6,7]
+        }
+
+    ],
+    "Models":[
+        {
+            "ID":2,
+            "input": [1],
+            "output": [9],
+            "model": "lenet1",
+            "max_batch": 32,
+            "SLO": 95
+        },
+        {
+            "ID":3,
+            "input": [1],
+            "output": [9],
+            "model": "lenet2",
+            "max_batch": 32,
+            "SLO": 95
+
+       },
+        {
+            "ID":4,
+            "input": [1],
+            "output": [9],
+            "model": "lenet3",
+            "max_batch": 32,
+            "SLO": 95
+
+      },
+        {
+            "ID":5,
+            "input": [1],
+            "output": [9],
+            "model": "lenet4",
+            "max_batch": 32,
+            "SLO": 95
+
+     },
+        {
+            "ID":6,
+            "input": [1],
+            "output": [9],
+            "model": "lenet5",
+            "max_batch": 32,
+            "SLO": 95
+
+    },
+        {
+            "ID":7,
+            "input": [1],
+            "output": [9],
+            "model": "lenet6",
+            "max_batch": 32,
+            "SLO": 95
+
+   },
+        {
+            "ID":8,
+            "input": [0],
+            "output": [9],
+            "model": "resnet50",
+            "max_batch": 32,
+            "SLO": 95
+  }
+
+
+    ],
+    "Output": [{
+            "ID":9,
+            "input":[2,3,4,5,6,7,8],
+            "Comp":"None"
+    }]
+
+}
