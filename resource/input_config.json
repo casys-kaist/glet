@@ -1,0 +1,129 @@
+{
+    "VER": 1.0,
+    "ModelInfoSpecs":[
+        {
+            "ModelName": "lenet1",
+            "Inputs": [
+                {
+                    "InputDim":[1,28,28],
+                    "InputType":"FP32"
+                }
+            ]
+        },
+        {
+            "ModelName": "resnet50",
+            "Inputs":[
+                {
+                    "InputDim": [3,224,224],
+                    "InputType":"FP32"
+                }
+            ]
+        },
+        {
+            "ModelName": "vgg16",
+            "Inputs":[
+                {
+                    "InputDim": [3,224,224],
+                    "InputType":"FP32"
+                }
+            ]
+        },
+        {
+            "ModelName": "googlenet",
+            "Inputs":[
+                {
+                    "InputDim": [3,224,224],
+                    "InputType":"FP32"
+                }
+            ]
+        },
+        {
+            "ModelName": "ssd-mobilenetv1",
+            "Inputs":[
+                {
+                    "InputDim": [3,300,300],
+                    "InputType":"FP32"
+                }
+            ]
+        },
+        {
+            "ModelName": "mnasnet1_0",
+            "Inputs":[
+                {
+                    "InputDim": [3,224,224],
+                    "InputType":"FP32"
+                }
+            ]
+        },
+        {
+            "ModelName": "mobilenet_v2",
+            "Inputs":[
+                {
+                    "InputDim": [3,224,224],
+                    "InputType":"FP32"
+                }
+            ]
+        },
+        {
+            "ModelName": "densenet161",
+            "Inputs":[
+                {
+                    "InputDim": [3,224,224],
+                    "InputType":"FP32"
+                }
+            ]
+        },
+        {
+            "ModelName": "bert",
+            "Inputs":[
+                {
+                    "InputDim": [1,14],
+                    "InputType":"INT64"
+                }
+            ]
+
+        },
+        {
+            "ModelName": "bert-large-uncased",
+            "Inputs":[
+                {
+                    "InputDim": [1,14],
+                    "InputType":"INT64"
+                }
+            ]
+
+        },
+        {
+            "ModelName": "gpt2-lm",
+            "Inputs":[
+                {
+                    "InputDim": [1,3],
+                    "InputType":"INT64"
+                }
+            ]
+
+        },
+        {
+            "ModelName": "gpt2-large-lm",
+            "Inputs":[
+                {
+                    "InputDim": [1,3],
+                    "InputType":"INT64"
+                }
+            ]
+
+        },
+        {
+            "ModelName": "gpt2-medium-lm",
+            "Inputs":[
+                {
+                    "InputDim": [1,3],
+                    "InputType":"INT64"
+                }
+            ]
+
+        }
+
+
+    ]
+}
