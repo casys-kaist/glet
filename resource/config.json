@@ -1,0 +1,39 @@
+{
+    "App_specs": [{
+            "name": "ssd-mobilenetv1",
+            "file": "config/ssd-mobilenetv1.json"
+
+            },{
+            "name": "vgg16",
+            "file": "config/vgg16.json"
+
+            },{
+            "name": "resnet50",
+            "file": "config/resnet50.json"
+
+            },{
+            "name": "lenet1",
+            "file": "config/lenet1.json"
+
+            },{
+            "name": "googlenet",
+            "file": "config/googlenet.json"
+
+            },{
+	    "name": "mnasnet1_0",
+	    "file": "config/mnasnet1_0.json"
+	    },{
+	    "name": "mobilenet_v2",
+	    "file": "config/mobilenet_v2.json"
+	    },{
+	    "name": "densenet161",
+	    "file": "config/densenet161.json"
+	    },{
+	    "name": "bert",
+	    "file": "config/bert.json"
+	    }
+
+
+    ]
+
+}
