@@ -1,0 +1,49 @@
+{
+    "models":[
+        {
+            "name":"lenet1",
+            "mem":50
+        },{
+            "name":"lenet2",
+            "mem":50
+        },{
+            "name":"lenet3",
+            "mem":50
+        },{
+            "name":"lenet4",
+            "mem":50
+        },{
+            "name":"lenet5",
+            "mem":50
+        },{
+            "name":"lenet6",
+            "mem":50
+        },{
+            "name":"googlenet",
+            "mem":1720
+        },{
+            "name":"resnet50",
+            "mem":1820
+        },{
+            "name":"ssd-mobilenetv1",
+            "mem":640
+        },{
+            "name":"vgg16",
+            "mem":2920
+        },{
+            "name":"densenet161",
+            "mem":1220
+        },{
+            "name":"mobilenet_v2",
+            "mem":464
+        },{
+            "name":"mnasnet1_0",
+            "mem":1550
+        },{
+            "name":"bert",
+            "mem":500
+        }
+
+    ]
+
+}
