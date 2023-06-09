@@ -20,7 +20,6 @@ include_directories(
 	src/proxy
 	src/scheduler
 	src/service
-	#${TONIC_INCLUDE_DIR}
     ${OpenCV_INCLUDE_DIRS}
     ${CMAKE_CURRENT_BINARY_DIR}
 )
