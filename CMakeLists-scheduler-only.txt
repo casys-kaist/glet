@@ -1,0 +1,64 @@
+cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
+project(gpu-let)
+
+#set(CMAKE_CXX_STANDARD 14)
+#set(CMAKE_CXX_STANDARD_REQUIRED ON)
+#set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_BUILD_TYPE Debug)
+set(GPULET_ROOT $ENV{PWD})
+
+
+include_directories(
+	#include
+    src/common
+	src/proxy
+	src/scheduler
+	src/service
+    ${CMAKE_CURRENT_BINARY_DIR}
+)
+
+#file(GLOB COMMON_SRCS src/common/*.cpp)
+file(GLOB SCHEDULER_SRCS src/scheduler/*.cpp)
+
+
+#------Essential Flags for experiment-----
+add_compile_definitions(EPOCH_DEBUG)
+add_compile_definitions(CHECK_MEM)
+add_compile_definitions(CHECK_NETBW)
+add_compile_definitions(PROFILE)
+add_compile_definitions(SCALE)
+add_compile_definitions(ADD_RATE)
+
+#-----Useful Flags for Debugging----------
+
+
+add_compile_definitions(PROXY_DEBUG)
+#add_compile_definitions(EAGER_DROP)
+add_compile_definitions(DEBUG)
+add_compile_definitions(SCHED_DEBUG)
+#add_compile_definitions(SCALE_DEBUG)
+
+#----- Old Flags that are not used often
+
+#add_compile_definitions(DROP_DEBUG)
+#add_compile_definitions(ST_DEBUG)
+#add_compile_definitions(BACKEND_DEBUG)
+#add_compile_definitions(FRONTEND_DEBUG)
+#add_compile_definitions(LB_DEBUG)
+
+#add_compile_definitions(OVERHEAD)
+#add_compile_definitions(RATE_DEBUG)
+#add_compile_definitions(DEV_LOG)
+#add_compile_definitions(MUTRACE)
+
+#---------standalone_scheduler---------
+add_executable(standalone_scheduler src/standalone_scheduler.cpp 
+		${SCHEDULER_SRCS}
+		src/common/scheduler_utils.cpp
+		src/common/jsoncpp.cpp
+		src/common/config.cpp
+		src/common/common_utils.cpp
+		)
+target_link_libraries(standalone_scheduler boost_program_options  boost_system)
+set_property(TARGET standalone_scheduler PROPERTY CXX_STANDARD 14)     
