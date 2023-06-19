@@ -1,0 +1,17 @@
+{
+	 "GPUs":[
+        {
+                "Type":"2080ti",
+                "Num": 4
+        }],
+        "Max Model": 3,
+        "Part": 1,
+        "Residue": 1.0,
+        "SLO Ratio":1.0,
+        "Latency Ratio":1.1,
+        "Interference": 1,
+        "Force Part":0,
+        "Avail_Parts":[20,40,60,80,100],
+        "Reserved_ratio": 0,
+        "Incremental": 1
+}
