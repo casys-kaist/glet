@@ -167,7 +167,7 @@ int main(int argc, char* argv[])
 		}
 	}
 	else{
-		/exhaustively search for best case
+		//exhaustively search for best case
 		std::vector<std::vector<Node>> possible_cases;
 		fillPossibleCases2(&possible_cases, SBP.getMaxGPUs()); 
 
