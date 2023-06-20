@@ -63,16 +63,11 @@ do
 		--mem_config $RES_DIR/mem-config.json \
 		--device_config $RES_DIR/device-config.json > "$RESULT_DIR"/$logfile
 
-        	#$BIN --task_config $RES_DIR/multi_configs/$taskfile \
-		#	--sim_config $SIM_DIR/$configfile --mem_config $RES_DIR/mem-config.json \
-		#	--latency_param $RES_DIR/latency.csv  --dev_mem 11019 \
-		#	--output $RESULT_DIR/ModelList-"$workload"-"$interval".txt > "$RESULT_DIR"/$logfile 
                 done
         done
 done
 fi
 
-#SCENS=('nonpart_inc-5p' 'part_inc-5p' 'part_int_inc-5p' 'nexus_org_inc-5p') 
 
 if [ $UPDATE_FLAG -eq 1 ];then
     for partition in ${SCENS[@]}
