@@ -23,7 +23,7 @@ fi
 ## otherwise, files accepted as parameters MUST have correct directories
 RES_DIR=../resource/
 BIN=../bin/frontend
-sim_config=$RES_DIR/sim-config.json
+sched_config=$RES_DIR/sched-config.json
 backend_list=$RES_DIR/BackendList.json
 mem_config=$RES_DIR/mem-config.json
 latency_prof=$RES_DIR/latency.csv
@@ -35,6 +35,6 @@ device_config=$RES_DIR/device-config.json
 
 $BIN --portno 8080 -s $scheduler --resource_dir $RES_DIR \
         --drop $drop --config_json $exp_config --proxy_json $proxy_config \
-        --sim_config $sim_config --mem_config $mem_config \
+        --sim_config $sched_config --mem_config $mem_config \
         --latency_profile $latency_prof --init_rate  $rate_file --model_list $model_list_file \
         --backend_json $backend_list --device_config $device_config

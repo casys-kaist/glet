@@ -4,7 +4,7 @@
 RES_DIR=$PWD/../resource/
 SIM_DIR=$RES_DIR
 BIN=$PWD/../bin/standalone_scheduler
-configfile=sim-config.json
+configfile=sched-config.json
 taskfile=rates.csv
 
 $BIN --resource_dir $RES_DIR --task_config $RES_DIR/$taskfile \
