@@ -19,10 +19,7 @@ RES_DIR=../resource/
 
 BIN=../bin/backend
 
-#sched_config=$RES_DIR/sched-config.json
-#mem_config=$RES_DIR/mem-config.json
 proxy_config=$RES_DIR/proxy_config.json
-#rate_file=$RES_DIR/rates.csv
 exp_config=$RES_DIR/config.json
 
 echo $proxy_config
