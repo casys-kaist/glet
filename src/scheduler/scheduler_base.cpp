@@ -63,7 +63,6 @@ namespace Scheduling{
 		}
 		_numMaxModel = root["Max Model"].asInt();
 		_usePart = root["Part"].asBool();
-		_residueThreshold = root["Residue"].asFloat();
 		_latencyRatio = root["Latency Ratio"].asFloat();
 		_useInterference = root["Interference"].asBool();
 		_useIncremental=false;
@@ -90,7 +89,6 @@ namespace Scheduling{
 #endif
 		sort(_availParts.begin(),_availParts.end(),std::greater<int>());
 
-		assert(0<=_residueThreshold);
 		assert(1<= _latencyRatio);
 		ifs.close();
 		return EXIT_SUCCESS;

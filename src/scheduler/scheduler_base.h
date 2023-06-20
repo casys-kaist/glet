@@ -129,7 +129,6 @@ class BaseScheduler {
 		const int _MAX_BATCH = 32;
 		int _numMaxModel;
 		bool _usePart;
-		float _residueThreshold;
 		float _latencyRatio;
 		bool  _useInterference;
 		bool  _useIncremental;
