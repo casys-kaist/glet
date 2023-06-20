@@ -77,20 +77,35 @@ Use 'execLocal.sh' to execute ML inference on local GPU. Useful for testing whet
 3. Execute execLocal.sh with parameters: 1) name of model you want to execute, 2) number of executions 3) batch size 4) interval between executions 5) (optional) percentage of computing resource.
 > example) ./execLocal.sh resnet50 1000 1 0.1 50
 
-## (TBD) Executing offline scheduler
-*Highly recommended that you replace example profile files with profile info on the platform you wish to execute*
+## Executing offline scheduler
+
+*Highly recommended that you replace example profile files with profile info on the platform you wish to execute before you use the offline scheduler*
+
+The offline scheduler is used for generating static scheduling results (default file name is '*ModelList.txt*' but the name of the file can be customized with the --*output* argument). 
+The static results are used as a guideline for the frontend server's *static* scheduler
+and used for debugging the scheduler.  
+
+The following is step-by-step explanation on how to setup the scheduler. Don't worry! We have also prepared example files for each step.
+Please refer to *execScheduler_MultiModelApp.sh* and *execScheduler_MultiModelScen.sh*, if you just want an example of how to execute the scheduler.
+
+(and please refer to src/standalone_scheduler.cpp for further details).
+
+1. Make task configuration (as csv) files.
+Task configuration file should contain the number of models, *N*, on the first line of file. For the next '*N*' lines, each line must specify (in the exact order) the ID of the model, incoming request rate (RPS) and SLO (in ms). The following command is an example of automating the process of creating task configuration files for multi model scenarios. Please refer the *createMultiModelAppConfigs.py* for multi model applications. 
+
+> python createMultiModelScenConfigs.py *output_dir*
+
+2. Prepare scheduler configuration file (default is resource/sim-config.json). 
+This JSON file specifies 1) the type and number of GPU that should be used for scheduling (each type of device should be provided with device configuration files and more details are specified in the *next step*), 2) various flags regarding interference and incremental scheduling and 3) the amount of latency buffer to use when scheduling. 
+
+3. Prepare device configuration file(s) and directories for each type of GPU you want to use for scheduling. Please refer to 'resource/device-config.json' and make sure that you have all the related files specified in device-config.json.
 
 
 ## (TBD) Multi servers for multi nodes
 
 
 
-
-
-
-
-
-# Future Plans (*Updated 2022-12-12*)
+# Future Plans (*Updated 2023-06-20*)
 
 
 Below is a list of items/features that are planned to be added to this repo.
