@@ -20,8 +20,8 @@ po::variables_map parse_opts(int ac, char** av) {
 	desc.add_options()("help,h", "Produce help message")
 		("resource_dir,rd", po::value<std::string>()->default_value("../resource"),"directory which hold resource files")
 		("task_config,tc", po::value<std::string>()->default_value("tasks.csv"),"csv file with each task's SLO and ")
-		("sim_config", po::value<std::string>()->default_value("sim_config.json"),"json file which hold simulation configurations")
-		("output", po::value<std::string>()->default_value("ModelList.txt"),"txt file which hold simulation results")
+		("sched_config", po::value<std::string>()->default_value("sim_config.json"),"json file which hold scheduling configurations")
+		("output", po::value<std::string>()->default_value("ModelList.txt"),"txt file which hold scheduling results")
 		("mem_config", po::value<std::string>()->default_value("mem-config.json"),"json file which holds the amount of memory each model+input uses")
 		("full_search", po::value<bool>()->default_value(false),"flag: conduct full search or not")
 		("proxy_config", po::value<std::string>()->default_value("proxy_config.json"),"json file which holds info input data")
@@ -108,7 +108,7 @@ int main(int argc, char* argv[])
 	po::variables_map vm = parse_opts(argc, argv);
 	std::vector<std::string> files={"1_28_28.txt", "3_224_224.txt", "3_300_300.txt"};
 	Scheduling::IncrementalScheduler  SBP;
-	bool success=  SBP.initializeScheduler(vm["sim_config"].as<std::string>(),\
+	bool success=  SBP.initializeScheduler(vm["sched_config"].as<std::string>(),\
 			vm["mem_config"].as<std::string>(),
 			vm["device_config"].as<std::string>(),
 			vm["resource_dir"].as<std::string>(),
