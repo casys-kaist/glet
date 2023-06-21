@@ -6,7 +6,6 @@
         }],
         "Max Model": 3,
         "Part": 1,
-        "SLO Ratio":1.0,
         "Latency Ratio":1.1,
         "Interference": 1,
         "Avail_Parts":[20,40,60,80,100],
