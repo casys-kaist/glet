@@ -1,0 +1,24 @@
+{
+    "nodes":[
+        {
+            "name": "rtx_machine",
+            "control_addr": "10.0.0.12:8081",
+            "data_addr": "10.0.0.12:8082",
+	    "type": "2080ti",
+            "nGPUs":4,
+            "sizes":[20,40,50,60,80,100],
+            "gpu_mem_size_mb": 11019,
+            "gpu_name": "rtx2080ti"
+        },
+        {
+            "name": "deep6",
+            "control_addr": "10.0.0.20:8081",
+            "data_addr": "10.0.0.20:8082",
+	    "type":"3080",
+            "nGPUs":2,
+            "sizes":[20,40,50,60,80,100],
+            "gpu_mem_size_mb": 10240,
+            "gpu_name": "rtx3080"
+        }
+    ]
+}
