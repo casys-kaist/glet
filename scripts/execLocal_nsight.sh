@@ -41,18 +41,11 @@ NSIGHT_BIN=/usr/local/cuda/nsight-compute-2022.1.1/nv-nsight-cu-cli
 APP_CMD="$BUILD_DIR/standalone_inference --task $task --taskfile $RES_DIR/models/$task.pt --requests $req \
 --batch $batch --mean $mean --input $RES_DIR/$input_txt --input_config_json $RES_DIR/input_config.json"
 
-
 PROFILE_FILE="profile.csv"
 
 round=1
-exit_flag=0
-while [ $exit_flag -eq 0 ]
-do
-        sudo $NSIGHT_BIN --profile-from-start off $APP_CMD > $PROFILE_FILE &
-
-        echo $APP_CMD
+sudo $NSIGHT_BIN --profile-from-start off $APP_CMD > $PROFILE_FILE &
+echo $APP_CMD
 PID=$!
 wait $PID
-        exit_flag=1
 
-done
