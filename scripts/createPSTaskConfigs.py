@@ -10,8 +10,9 @@ from operator import itemgetter
 import json
 
 
+#workloads=["traffic", "game", "short", "long", "group1", "group2", "group3"]
 
-workloads=["traffic", "game", "short", "long", "group1", "group2", "group3"]
+workloads=["traffic", "game", "scen1", "scen2", "scen3", "scen4", "scen5"]
 SLO=[]
 model_ids=[]
 
@@ -23,23 +24,23 @@ def parse_args():
     args = parser.parse_args()
     return args
 
-def setup(mode):
+def setup(workload):
     global SLO
-    global model_ids
-    if mode == "traffic":
+    global workloadl_ids
+    if workload == "traffic":
         SLO=[(6,112),(8,90),(9,112)]
         model_ids=[6,8,9]
-    elif mode == "game":
+    elif workload == "game":
         SLO=[(0,108),(1,108),(2,108),(3,108),(4,108),(5,108),(7,108)]
         model_ids=[0,1,2,3,4,5,7]
     else:
         SLO=[(0,5),(6,66),(7,108),(8,202),(9, 142),(10,62),(11,64),(12,202),(13,22)]
         model_ids=[0,6,7,8,9,10,11,12,13]
        
-def generateCombinations(mode):
+def generateCombinations(workload):
     comb_list=[]
     rates=range(10,3000,10)
-    if mode == "short":
+    if workload == "scen1":
         for rate in rates:
             item1=(0,rate*2)
             item2=(6,rate*2)
@@ -47,13 +48,13 @@ def generateCombinations(mode):
             item4=(8,rate)
             item5=(9,rate)
             comb_list.append([item1,item2,item3,item4,item5])
-    elif mode == "long":
+    elif workload == "scen2":
         for rate in rates:
             item3=(7,rate)
             item4=(8,rate)
             item5=(9,rate)
             comb_list.append([item3,item4,item5])
-    elif mode == "game":
+    elif workload == "game":
         for rate in rates:
             item1=(0,rate)
             item2=(1,rate)
@@ -63,56 +64,33 @@ def generateCombinations(mode):
             item6=(5,rate)
             item7=(7,rate)
             comb_list.append([item1,item2,item3,item4,item5,item6,item7])
-    elif mode == "traffic":
+    elif workload == "traffic":
         for rate in rates:
             item1=(6,rate)
             item2=(8,rate)
             item3=(9,rate)
             comb_list.append([item1,item2,item3])
-    elif mode == "equal":
-        for rate in rates:
-            item1=(0,rate)
-            item2=(6,rate)
-            item3=(7,rate)
-            item4=(8,rate)
-            item5=(9,rate)
-            comb_list.append([item1,item2,item3,item4,item5])
-    elif mode == "large":
-        for rate in rates:
-            item1=(9,rate)
-            item2=(12,rate)
-            comb_list.append([item1,item2])
-    elif mode == "group1":
+    elif workload == "scen3":
         for rate in rates:
             item1=(7,rate)
             item2=(9,rate)
             item3=(11,rate)
             comb_list.append([item1,item2,item3])
-    elif mode == "group2":
+    elif workload == "scen4":
         for rate in rates:
             item1=(8,rate)
             item2=(10,rate)
             item3=(12,rate)
             comb_list.append([item1,item2,item3])
-    elif mode == "group3":
+    elif workload == "scen5":
         for rate in rates:
             item1=(0,rate)
             item2=(8,rate)
             item3=(9,rate)
             item4=(10,rate)
             comb_list.append([item1,item2,item3,item4])
-
-
-    elif mode == "small":
-        for rate in rates:
-            #item1=(0,rate)
-            item2=(6,rate)
-            item3=(10,rate)
-            item4=(11,rate)
-            item5=(13,rate)
-            comb_list.append([item2,item3,item4,item5])
     else:
-        print("unrecognized mode: "+mode)
+        print("unrecognized workload: "+workload)
         exit(1)
     return comb_list
    
@@ -140,11 +118,11 @@ def writeContent(comb, fp, idx):
         fp.write(str(item[0])+","+str(item[1])+","+str(slo)+",")
         fp.write("\n")
 
-def generateLists(list_dir, possible_combinations, mode):
+def generateLists(list_dir, possible_combinations, workload):
     save_path=list_dir
     idx=0
     for idx in range(0,len(possible_combinations)):
-        filename=mode+"-"+str(idx+1)+"-config.csv"
+        filename=workload+"-"+str(idx+1)+"-config.csv"
         complete_path=os.path.join(save_path,filename)
         fp=open(complete_path,"w")
         writeContent(possible_combinations[idx],fp, idx)
