@@ -94,6 +94,8 @@ nvprof-*
 # vscode related files
 *vscode*
 
-# example output files
+# example output files and intermediate files for experimenting
+*resource/*example*/
 *resource/*Results/
 *resource/*Configs/
+
