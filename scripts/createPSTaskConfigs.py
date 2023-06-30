@@ -9,9 +9,6 @@ import statistics
 from operator import itemgetter
 import json
 
-
-#workloads=["traffic", "game", "short", "long", "group1", "group2", "group3"]
-
 workloads=["traffic", "game", "scen1", "scen2", "scen3", "scen4", "scen5"]
 SLO=[]
 model_ids=[]
