@@ -2,13 +2,13 @@
 
 if [ -z "$1" ] 
 then
-    echo "number of GPUs not given "
-    exit
+    echo "Number of GPUs not given! The sript will use nvidia-smi to detect number of GPUs "
+    NUM=$(nvidia-smi --query-gpu=name --format=csv,noheader | wc -l)
 else
     NUM=$1
-    NUM=$((NUM-1))
 fi
-
+echo "Starting MPS on $NUM GPUs"
+NUM=$((NUM-1))
 GPUS=`seq 0 $NUM`
 
 export CUDA_VISIBLE_DEVICES=$GPUS
@@ -26,6 +26,5 @@ export CUDA_MPS_LOG_DIRECTORY=/tmp/nvidia-log # Select a location that’s acces
 
 nvidia-cuda-mps-control -d # Start the daemon
 
-
 echo "start_server -uid $(id -u sbchoi)" |  nvidia-cuda-mps-control # start server manually
-
+echo "MPS initiation complete"
