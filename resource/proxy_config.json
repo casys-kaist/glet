@@ -1,0 +1,121 @@
+{
+    "Models":[
+        {   
+            "name":"lenet1",
+            "proxy_id":0,
+            "input_dim":[1,28,28],
+            "output_dim":[1000],
+	    "input_type":"FP32",
+	    "output_type":"FP32"
+        },
+        {   
+            "name":"lenet2",
+            "proxy_id":1,
+            "input_dim":[1,28,28],
+            "output_dim":[1000],
+	    "input_type":"FP32",
+	    "output_type":"FP32"
+
+        },
+        {   
+            "name":"lenet3",
+            "proxy_id":2,
+            "input_dim":[1,28,28],
+            "output_dim":[1000],
+	    "input_type":"FP32",
+	    "output_type":"FP32"
+
+        },
+        {   
+            "name":"lenet4",
+            "proxy_id":3,
+            "input_dim":[1,28,28],
+            "output_dim":[1000],
+	    "input_type":"FP32",
+	    "output_type":"FP32"
+
+        },
+        {   
+            "name":"lenet5",
+            "proxy_id":4,
+            "input_dim":[1,28,28],
+            "output_dim":[1000],
+	    "input_type":"FP32",
+	    "output_type":"FP32"
+        },
+        {   
+            "name":"lenet6",
+            "proxy_id":5,
+            "input_dim":[1,28,28],
+            "output_dim":[1000],
+	    "input_type":"FP32",
+	    "output_type":"FP32"
+        },
+        {
+            "name":"googlenet",
+            "proxy_id":6,
+            "input_dim":[3,224,224],
+            "output_dim":[1000],
+	    "input_type":"FP32",
+	    "output_type":"FP32"
+        },
+        {
+            "name":"resnet50",
+            "proxy_id":7,
+            "input_dim":[3,224,224],
+            "output_dim":[1000],
+	    "input_type":"FP32",
+	    "output_type":"FP32"
+        },
+        {
+            "name":"ssd-mobilenetv1",
+            "proxy_id":8,
+            "input_dim":[3,300,300],
+            "output_dim":[3000,4],
+	    "input_type":"FP32",
+	    "output_type":"FP32"
+        },
+        {
+            "name":"vgg16",
+            "proxy_id":9,
+            "input_dim":[3,224,224],
+            "output_dim":[1000],
+	    "input_type":"FP32",
+	    "output_type":"FP32"
+        },
+   	{
+            "name": "mnasnet1_0",
+	    "proxy_id":10,
+            "input_dim": [3,224,224],
+            "output_dim": [1000],
+	    "input_type":"FP32",
+	    "output_type":"FP32"
+        },
+   	{
+            "name": "mobilenet_v2",
+	    "proxy_id":11,
+            "input_dim": [3,224,224],
+            "output_dim": [1000],
+	    "input_type":"FP32",
+	    "output_type":"FP32"
+        },
+   	{
+            "name": "densenet161",
+	    "proxy_id":12,
+            "input_dim": [3,224,224],
+            "output_dim": [1000],
+	    "input_type":"FP32",
+	    "output_type":"FP32"
+        },
+   	{
+            "name": "bert",
+	    "proxy_id":13,
+            "input_dim": [14],
+            "output_dim": [2],
+	    "input_type":"INT64",
+	    "output_type":"FP32"
+        }
+
+    ]
+
+}
