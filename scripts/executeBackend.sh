@@ -31,7 +31,7 @@ last_idx=$(($NGPUS-1))
 $BIN --backend_control_portno 8081 --backend_data_portno 8082 \
         --gpu_idxs $first_idx-$last_idx --nproxy $MAX_NUM_OF_PROXYS\
         --config_json $exp_config --proxy_json $proxy_config \
-	--full_proxy_dir $proxy_dir
+	--full_proxy_dir $proxy_dir \
 	--resource_dir $RES_DIR
 
 
