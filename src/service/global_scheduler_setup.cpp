@@ -431,8 +431,6 @@ void GlobalScheduler::setupLoadBalancer(std::map<proxy_info*, std::vector<std::p
 		}
 	}
 #endif 
-
-
 	if(mLoadBalancer.updateTable(mapping_trps)){
 		std::cout << __func__ << ": ERROR when update load balancer table, exiting program"
 			<<std::endl;
@@ -441,17 +439,51 @@ void GlobalScheduler::setupLoadBalancer(std::map<proxy_info*, std::vector<std::p
 }
 
 
-int GlobalScheduler::setupModelwithJSON(const char* AppJSON, std::string res_dir, GlobalScheduler &scheduler){
+int GlobalScheduler::setupModelwithJSON(const std::string &config_file, const std::string &res_dir, GlobalScheduler &scheduler){
+	std::string path_to_json_file = res_dir + "/" + config_file;
+#ifdef DEBUG
+	printf("%s: Reading %s \n", __func__, path_to_json_file.c_str());
+#endif 
 	Json::Value root;
 	std::ifstream ifs;
-	std::string full_name = res_dir + "/"+std::string(AppJSON);
+	ifs.open(path_to_json_file);
+	if(!ifs){
+		std::cout << __func__ << ": failed to open file: " << path_to_json_file
+			<<std::endl;
+		exit(1);
+	}
+	Json::CharReaderBuilder builder;
+	JSONCPP_STRING errs;
+	if (!parseFromStream(builder, ifs, &root, &errs)) {
+		std::cout << errs << std::endl;
+		return EXIT_FAILURE;
+		ifs.close();
+	}
+	for(unsigned int i=0; i<root["App_specs"].size(); i++){
+		if(setupModelforSchduling(root["App_specs"][i]["file"].asString(), res_dir, scheduler)){
+			std::cout << __func__ << ": failed to setup " << root["App_specs"][i]["file"].asCString()
+				<<std::endl;
+			continue;
+		}
+		//int len = SysState.getAppSpecVec()->size();
+		//temp->setGlobalVecID(len);
+		//SysState.getAppSpecVec()->push_back(*temp);
+	}
+	ifs.close();
+	return EXIT_SUCCESS;
+	
+}
+int GlobalScheduler::setupModelforSchduling(const std::string &app_json_file, const std::string &res_dir,GlobalScheduler &scheduler){
+	Json::Value root;
+	std::ifstream ifs;
+	std::string path_to_json_file = res_dir + "/"+ app_json_file;
 #ifdef DEBUG
-	printf("%s: Reading App JSON File: %s \n", __func__, full_name.c_str());
+	printf("%s: Reading App JSON File: %s \n", __func__, path_to_json_file.c_str());
 #endif 
-	ifs.open(full_name);
+	ifs.open(path_to_json_file);
 	// fail check
 	if(!ifs){
-		std::cout << __func__ << ": failed to open file: " << full_name
+		std::cout << __func__ << ": failed to open file: " << path_to_json_file
 			<<std::endl;
 		exit(1);
 	}
@@ -472,4 +504,5 @@ int GlobalScheduler::setupModelwithJSON(const char* AppJSON, std::string res_dir
 			scheduler.setMaxBatch(root["Models"][i]["model"].asString(), "gpu", DEFAULT_MAX_BATCH);   
 		if (root["Models"][i].isMember("SLO")) scheduler.setupModelSLO(root["Models"][i]["model"].asString(), root["Models"][i]["SLO"].asInt());
 	}
+	return EXIT_SUCCESS;
 }
