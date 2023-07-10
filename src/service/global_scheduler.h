@@ -140,7 +140,8 @@ class GlobalScheduler
 		int oneshotScheduling(SysMonitor *SysState);
 		int readAndBoot(SysMonitor *SysState, std::string model_list_file);
 		void setupBackendProxyCtrls();
-		int setupModelwithJSON(const char* AppJSON, std::string res_dir, GlobalScheduler &scheduler);
+		int setupModelwithJSON(const std::string &config_file, const std::string &res_dir,GlobalScheduler &scheduler);
+		int setupModelforSchduling(const std::string &app_json_file, const std::string &res_dir,GlobalScheduler &scheduler);
 
 	private: 
 		scheduler mSchedulerMode;
