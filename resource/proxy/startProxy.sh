@@ -85,16 +85,12 @@ elif [ "$device" -eq 1 ] #respect NUMA
 then
         taskset -c 5-9 $BIN --common $COMMON_DIR --devid $device  --threadcap $cap --dedup $dedup --model_list $model_list --partition $part_flag --ngpu $ngpu --npart $nparts > log_"$device"_"$cap"_"$dedup"
 
-    #askset -c 5-9 build/proxy --common $COMMON_DIR --devid $device  --threadcap $cap --dedup $dedup --model_list $model_list > log_"$device"_"$cap"_"$dedup"
 elif [ "$device" -eq 2 ] #respect NUMA 
 then
         taskset -c 10-14 $BIN --common $COMMON_DIR --devid $device  --threadcap $cap --dedup $dedup --model_list $model_list --partition $part_flag --ngpu $ngpu --npart $nparts > log_"$device"_"$cap"_"$dedup"
-#    taskset -c 10-14 build/proxy --common $COMMON_DIR --devid $device  --threadcap $cap --dedup $dedup --model_list $model_list > log_"$device"_"$cap"_"$dedup"
 
 else
         taskset -c 15-19 $BIN --common $COMMON_DIR --devid $device  --threadcap $cap --dedup $dedup --model_list $model_list --partition $part_flag  --ngpu $ngpu --npart $nparts > log_"$device"_"$cap"_"$dedup"
-
-#    taskset -c 15-19 build/proxy --common $COMMON_DIR --devid $device  --threadcap $cap --dedup $dedup --model_list $model_list > log_"$device"_"$cap"_"$dedup"
 
 fi
 
