@@ -103,22 +103,32 @@ This JSON file specifies 1) the type and number of GPU that should be used for s
 3. Prepare device configuration file(s) and directories for each type of GPU you want to use for scheduling. Please refer to 'resource/device-config.json' and make sure that you have all the related files specified in device-config.json.
 
 
-## (TBD) Multi servers for multi nodes
+## Experimenting on Multiple Servers
+Below are example scripts that will help you get started when experiementing with multiple servers.
+
+1. setupServer.sh: Boots servers that are listed within the script. *Make sure each server can be accessed by ssh without passwords.*
+
+2. shutdownServer.sh: Shutdowns servers that are listed within the script. The script shutdowns the backend servers and frontend servers in order. 
+
+3. experMultiModelApp.sh: Boots servers (with setupServer.sh), generates requests for given app, shutdowns servers (with shutdownServer.sh) and analyzes the results. All scripts required for analyzing are provided in the repo.
+
+4. experMultiModelScen.sh: Works simiarliy to *experMultiModelApp.sh* but experiments with a given configuration (JSON) file which specifies the request rate of each model.
+
+5. experiment_ps.sh: An example script for showing how to use *experMultiModelApp.sh* and *experMultiModelScens.h*.
 
 
-
-# Future Plans (*Updated 2023-06-20*)
+# Future Plans (*Updated 2023-07-18*)
 
 
 Below is a list of items/features that are planned to be added to this repo.
 
 - Source code of all SW components used in experimentation: standalone inference binary, standalone scheduler, request generator, backend server, frontend server and proxy server (**completed**)
 
-- Scripts used for executing and analyzing experiments (**ongoing**)
+- Scripts used for executing and analyzing experiments (**completed**)
 
-- Docker related files e.g.) Dockerfile
+- Docker related files e.g.) Dockerfile and scripts (**ongoing**)
 
-- Improved UI for SW components
+- Improved UI for SW components 
 
 - Misc: Refactoring for better code, consistency
 
