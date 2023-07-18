@@ -62,23 +62,6 @@ else
 	root_result=$5
 fi
 
-inspect(){
-good=True
-local dir=$1
-for entry in "$dir"/*
-do
-        if [[ $entry == *"client"* ]];then
-        	if grep -q "END PROGRAM" "$entry"; then
-                         :
-                 else
-                         good=False
-                fi
-        fi
-done
-echo $good
-}
-
-
 # this script has been modified for ASPLOS'21 version
 REMOTE_URL='10.0.0.12'
 
