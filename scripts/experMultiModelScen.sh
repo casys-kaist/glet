@@ -2,9 +2,9 @@
 
 
 #FLAGS
-server_flag=0 # flag for starting up remote server
-exp_flag=0  # flag for sending clients
-analyze_flag=0 # for analyzing completed experiment
+server_flag=1 # flag for starting up remote server
+exp_flag=1  # flag for sending clients
+analyze_flag=1 # for analyzing completed experiment
 
 if [ -z $1 ]
 then
@@ -51,6 +51,10 @@ then
 else
         echo "will pass $4 as scheduler to frontend server"
         scheduler=$4
+		if [ "$scheduler" == "mps_static" ];
+		then
+			echo "Do NOT forget to rename (or copy) scheduling result to resource/ModelList.txt "
+		fi
 fi
 
 if [ -z $5 ]
@@ -187,13 +191,13 @@ do
 
 			for num in `seq 1 ${nclients_per_model[$app]}`
 			do
-			if [ "$dist" == "exp" ]
-			then
-			./$IMG_SH $app ${requests_per_model[$app]} 1 ${rates_per_model[$app]} 1 1>$RESULT_DIR/$app-$num-client.csv &
-			elif [ "$dist" == "uni" ] 
-			then 
-			./$IMG_SH $app ${requests_per_model[$app]} 1 ${rates_per_model[$app]} 1>$RESULT_DIR/$app-$num-client.csv &
-			fi
+				if [ "$dist" == "exp" ]
+				then
+				./$IMG_SH $app ${requests_per_model[$app]} 1 ${rates_per_model[$app]} 1 1>$RESULT_DIR/$app-$num-client.csv &
+				elif [ "$dist" == "uni" ] 
+				then 
+				./$IMG_SH $app ${requests_per_model[$app]} 1 ${rates_per_model[$app]} 1>$RESULT_DIR/$app-$num-client.csv &
+				fi
 			pids[${i}]=$!
 			i=$((i+1))
 			done #nclient 
@@ -226,11 +230,11 @@ if [ $analyze_flag -eq 1 ]
 then
     for iter in `seq 1 $iternum` 
     do
-	RESULT_FILE=$iter-schd_metrics.csv
-	# erase file just in case previous analysis influences current results
-	rm $ROOT_RESULT_DIR/$RESULT_FILE
-	python $SCRIPT_DIR/$PY_ANALYZE $ROOT_RESULT_DIR/$iter $ROOT_RESULT_DIR/$RESULT_FILE
-    echo "Metric results are stored in $ROOT_RESULT_DIR/$RESULT_FILE"
+		RESULT_FILE=$iter-schd_metrics.csv
+		# erase file just in case previous analysis influences current results
+		rm $ROOT_RESULT_DIR/$RESULT_FILE
+		python $SCRIPT_DIR/$PY_ANALYZE $ROOT_RESULT_DIR/$iter $ROOT_RESULT_DIR/$RESULT_FILE
+    	echo "Metric results are stored in $ROOT_RESULT_DIR/$RESULT_FILE"
     done
     RESULT_FILE=schd_decisions.csv
     rm $ROOT_RESULT_DIR/$RESULT_FILE
