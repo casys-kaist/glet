@@ -1,0 +1,10 @@
+{
+    "App_specs": [{
+            "name": "game",
+            "file": "config/game.json"
+            },{
+            "name": "traffic",
+            "file": "config/traffic.json"
+            }
+    ]
+}
