@@ -36,6 +36,7 @@ else
     echo "exp flag specified as "$5 ""
     dist="exp"
 fi
+
 if [ -z "$6" ]
 then
     echo "flux flag not specified"
@@ -45,20 +46,17 @@ else
     flux_flag=1
 fi
 
-
 RES_DIR=$PWD/../resource 
 DATA_ROOT_DIR=$RES_DIR
-
 BUILD_DIR=$PWD/../bin
 
 
 if [ "$task" == "ssd-mobilenetv1" -o "$task" == "traffic" ];
 then
-input_txt='input-camera.txt'
+    input_txt='input-camera.txt'
 
 else
-input_txt='input.txt'
-
+    input_txt='input.txt'
 fi
 
 # frontend server
