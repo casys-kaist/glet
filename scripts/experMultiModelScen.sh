@@ -121,6 +121,7 @@ do
 	else
 		nclient=4
 	fi
+
 	rate=$((rate/nclient))
 	request=$((20 * rate))	
 
@@ -149,9 +150,8 @@ done
 
 if [  "$server_flag" -eq 1 ]
 then
-
-echo "IF YOU WANT TO BACK OFF, press ctrl + c !! YOU HAVE 10 seconds"
-sleep 10
+	echo "IF YOU WANT TO BACK OFF, press ctrl + c !! YOU HAVE 10 seconds"
+	sleep 10
 fi
 
 
@@ -193,10 +193,10 @@ do
 			do
 				if [ "$dist" == "exp" ]
 				then
-				./$IMG_SH $app ${requests_per_model[$app]} 1 ${rates_per_model[$app]} 1 1>$RESULT_DIR/$app-$num-client.csv &
+					./$IMG_SH $app ${requests_per_model[$app]} 1 ${rates_per_model[$app]} 1 1>$RESULT_DIR/$app-$num-client.csv &
 				elif [ "$dist" == "uni" ] 
 				then 
-				./$IMG_SH $app ${requests_per_model[$app]} 1 ${rates_per_model[$app]} 1>$RESULT_DIR/$app-$num-client.csv &
+					./$IMG_SH $app ${requests_per_model[$app]} 1 ${rates_per_model[$app]} 1>$RESULT_DIR/$app-$num-client.csv &
 				fi
 			pids[${i}]=$!
 			i=$((i+1))
@@ -211,15 +211,15 @@ do
 		done
 		if [ "$server_flag" -eq 1 ]
 		then
-		echo "waiting for server to finish!"
-		sleep 3
-		# stop server and clean up data
-		./shutdownServer.sh
-		sleep 20
-		scp $REMOTE_URL:$SCRIPT_DIR/log.txt $RESULT_DIR/server-model.csv
-		scp $REMOTE_URL:$SCRIPT_DIR/Applog.txt  $RESULT_DIR/server-app.csv
-		scp $REMOTE_URL:$SCRIPT_DIR/log  $RESULT_DIR/server-log.txt
-		ssh $REMOTE_URL "rm $SCRIPT_DIR/log.txt; rm $SCRIPT_DIR/Applog.txt" # erase files so that results dont get mixed up
+			echo "waiting for server to finish!"
+			sleep 3
+			# stop server and clean up data
+			./shutdownServer.sh
+			sleep 20
+			scp $REMOTE_URL:$SCRIPT_DIR/log.txt $RESULT_DIR/server-model.csv
+			scp $REMOTE_URL:$SCRIPT_DIR/Applog.txt  $RESULT_DIR/server-app.csv
+			scp $REMOTE_URL:$SCRIPT_DIR/log  $RESULT_DIR/server-log.txt
+			ssh $REMOTE_URL "rm $SCRIPT_DIR/log.txt; rm $SCRIPT_DIR/Applog.txt" # erase files so that results dont get mixed up
 		fi #server_flag
 	done # go
 
