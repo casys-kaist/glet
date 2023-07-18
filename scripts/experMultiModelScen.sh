@@ -82,7 +82,8 @@ declare -A intervals
 declare -A nclients
 declare -A requests
 
-models=([0]='lenet1' [6]='googlenet' [7]='resnet50' [8]='ssd-mobilenetv1' [9]='vgg16')
+models=([0]='lenet1' [1]='lenet2' [2]='lenet3' [3]='lenet4' [4]='lenet5' [5]='lenet6' [6]='googlenet' \
+[7]='resnet50' [8]='ssd-mobilenetv1' [9]='vgg16' [10]='mnasnet1_0' [11]='mobilnet_v2' [12]='densenet161' [13]='bert')
 
 APPS=()
 
