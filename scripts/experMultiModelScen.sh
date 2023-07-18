@@ -71,30 +71,18 @@ RES_DIR=$ROOT_DIR/resource
 SCRIPT_DIR=$ROOT_DIR/scripts
 DATA_DIR=$ROOT_DIR/data
 
-
-#SERVER_DIR=$ROOT_DIR/service
-#RATE_DIR=$RES_DIR/rates
-
 #CLIENT SCRIPTS
 IMG_SH=execReqGen.sh
 
-
 #ANALYZING SCRIPT
 PY_ANALYZE=analyzeServerClient.py
-PY_ANALYZE2=analyzeScheduleDecisions.py
 PY_ITER_ANALYZE=analyzeInterScheduleResults.py
-PY_ANALYZE_GPU=parseNVML.py
-
-## 
-
 
 declare -A intervals
 declare -A nclients
 declare -A requests
 
-
 models=([0]='lenet1' [6]='googlenet' [7]='resnet50' [8]='ssd-mobilenetv1' [9]='vgg16')
-
 
 APPS=()
 
@@ -138,7 +126,6 @@ do
 	echo "nclient:  "${nclients_per_model[${models[$id]}]}
 	echo "request: "${requests_per_model[${models[$id]}]}  
 	APPS+=(${models[$id]})
-
 done < $req_rate_file
 sleep 2
 
@@ -217,21 +204,16 @@ do
 			wait $pid
 			#kill -9 $pid
 		done
-		#echo "all requests from client has returned" 
 		if [ "$server_flag" -eq 1 ]
 		then
 		echo "waiting for server to finish!"
 		sleep 3
-		# 4 stop server and clean up data
-		#ssh $REMOTE_URL "pkill djinn"
+		# stop server and clean up data
 		./shutdownServer.sh
 		sleep 20
 		scp $REMOTE_URL:$SCRIPT_DIR/log.txt $RESULT_DIR/server-model.csv
 		scp $REMOTE_URL:$SCRIPT_DIR/Applog.txt  $RESULT_DIR/server-app.csv
-		#scp $REMOTE_URL:$SCRIPT_DIR/throughput_log.txt  $RESULT_DIR/server-throughput.csv
-		#scp $REMOTE_URL:$SCRIPT_DIR/queue_log.txt  $RESULT_DIR/server-queue.csv
 		scp $REMOTE_URL:$SCRIPT_DIR/log  $RESULT_DIR/server-log.txt
-
 		ssh $REMOTE_URL "rm $SCRIPT_DIR/log.txt; rm $SCRIPT_DIR/Applog.txt" # erase files so that results dont get mixed up
 		fi #server_flag
 	done # go
