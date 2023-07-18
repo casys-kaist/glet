@@ -44,6 +44,8 @@ Install the following libraries and drivers to build the prototype
 
 - cmake >= 3.19, use cmake to build binaries (script provided)
 
+- pandas (optional, only required for analyzing results)
+
 
 ## Step-by-step building instructions
 
