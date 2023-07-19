@@ -108,8 +108,7 @@ This JSON file specifies 1) the type and number of GPU that should be used for s
 
 3. Prepare device configuration file(s) and directories for each type of GPU you want to use for scheduling. Please refer to 'resource/device-config.json' and make sure that you have all the related files specified in device-config.json.
 
-
-## Experimenting on Multiple Servers
+## Example script for experimenting on multiple servers
 Below are example scripts that will help you get started when experiementing with multiple servers.
 
 1. setupServer.sh: Boots servers that are listed within the script. *Make sure each server can be accessed by ssh without passwords.*
@@ -121,6 +120,35 @@ Below are example scripts that will help you get started when experiementing wit
 4. experMultiModelScen.sh: Works simiarliy to *experMultiModelApp.sh* but experiments with a given configuration (JSON) file which specifies the request rate of each model.
 
 5. experiment_ps.sh: An example script for showing how to use *experMultiModelApp.sh* and *experMultiModelScens.h*.
+
+## Steps for executing toy example (with Docker)
+1. Navigate to 'glet/scripts' directory
+> cd glet/scripts
+
+2. Start MPS with **sudo** (or else MPS will not be available to docker)
+> sudo ./start_MPS.sh
+
+3. Create an overlay network with dockers. The script will create an attachable network for subnet range 10.10.0.0/24.
+
+> cd ../docker_files
+./create_docker_overlay_network.sh
+
+4. On separate terminals, run backend servers on each terminal (private IP address should match those listed in 'glet/resource/Backend_docker.json'). Each script will setup a backend server for GPU 0 and GPU 1 respectively.
+> ./run_interactive_backend_docker.sh 0 10.10.0.3
+./run_interactive_backend_docker.sh 1 10.10.0.4
+
+5. On another terminal, run the frontend server.
+> ./run_interactive_frontend_docker.sh oracle 10.10.0.20 1
+
+6. On another terminal, run the clients.
+> ./run_interactive_client_docker.sh 10.10.0.21 test-run
+
+7. As an result 'log.txt' will be created under 'glet/scripts', which is a logging file that has various results when each request was executed in the server.
+
+8. Terminate process on each terminal to end the example.
+
+9. (Optional) in order to shutdown MPS, execute 'shutdown_MPS.sh' under 'glet/scripts'
+> sudo ../shutdown_MPS.sh
 
 
 # Future Plans (*Updated 2023-07-18*)
