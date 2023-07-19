@@ -46,6 +46,12 @@ Install the following libraries and drivers to build the prototype
 
 - pandas (optional, only required for analyzing results)
 
+## Prerequisites for running docker image
+
+1. docker ver >= 20
+
+2. nvidia-docker, for utilizing NVIDIA GPUs.
+
 
 ## Step-by-step building instructions
 
