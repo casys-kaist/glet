@@ -162,7 +162,7 @@ We also provide the 'base' image we have used. Note that all prerequisites liste
 
 This will build an image with 'Dockerfile' and the image will be tagged with 'glet-server:latest'.
 
-# Future Plans (*Updated 2023-07-18*)
+# Future Plans (*Updated 2023-07-19*)
 
 
 Below is a list of items/features that are planned to be added to this repo.
@@ -171,13 +171,11 @@ Below is a list of items/features that are planned to be added to this repo.
 
 - Scripts used for executing and analyzing experiments (**completed**)
 
-- Docker related files e.g.) Dockerfile and scripts (**ongoing**)
+- Docker related files e.g.) Dockerfile and scripts (**completed**)
 
-- Improved UI for SW components 
+- Improved UI for SW components (**on-hold**)
 
-- Misc: Refactoring for better code, consistency
-
-
+- Misc: Refactoring for better code, consistency (**on-going**)
 
 # Contact
 
