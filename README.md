@@ -150,6 +150,17 @@ Below are example scripts that will help you get started when experiementing wit
 9. (Optional) in order to shutdown MPS, execute 'shutdown_MPS.sh' under 'glet/scripts'
 > sudo ../shutdown_MPS.sh
 
+## Steps for producing custom docker server image
+
+We also provide the 'base' image we have used. Note that all prerequisites listed in [Getting Started with Native Binaries](#Getting-Started-with-Native-Binaries:) must be installed.
+
+1. Pull the base image.
+> docker pull sbchoi/glet-base:latest
+
+2. Execute building script stored under 'glet/docker_files'.
+> cd glet/docker_files && ./build_dockers.sh
+
+This will build an image with 'Dockerfile' and the image will be tagged with 'glet-server:latest'.
 
 # Future Plans (*Updated 2023-07-18*)
 
