@@ -1,5 +1,7 @@
 # Github repository for Gpu-let Prototype
 
+[White Paper (Step-by-Step Guide to gpulet)](https://github.com/casys-kaist/glet/blob/main/white_paper/step-by-step_guide_gpulet.pdf)
+
 To maximize the resource efficiency of inference servers, we proposed a key mechanism to exploit hardware support for spatial
 partitioning of GPU resources. With the partitioning mechanism, a new abstraction layer of GPU resources is created with
 configurable GPU resources. The scheduler assigns requests
